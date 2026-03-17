@@ -1,0 +1,33 @@
+{
+  "extends": "expo/tsconfig.base",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./*"],
+      "@": ["./"],
+
+      "@spezivibe/chat": ["packages/chat/src"],
+      "@spezivibe/chat/*": ["packages/chat/src/*"],
+
+
+      "@spezivibe/scheduler": ["packages/scheduler/src"],
+      "@spezivibe/scheduler/*": ["packages/scheduler/src/*"],
+
+      "@spezivibe/questionnaire": ["packages/questionnaire/src"],
+      "@spezivibe/questionnaire/*": ["packages/questionnaire/src/*"]
+    }
+  },
+  "exclude": [
+    "node_modules",
+    "functions",
+    "packages/**/__tests__/**",
+    "**/*.test.ts",
+    "**/*.test.tsx"
+  ],
+  "include": [
+    "**/*.ts",
+    "**/*.tsx",
+    ".expo/types/**/*.ts",
+    "expo-env.d.ts"
+  ]
+}

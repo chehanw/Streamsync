@@ -1,0 +1,295 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "api/research.proto",
+    "version": "version not set"
+  },
+  "tags": [
+    {
+      "name": "Research"
+    }
+  ],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {
+    "/api.Research/Export": {
+      "post": {
+        "summary": "Export returns paginated sessions with metrics for the requested time range.",
+        "operationId": "Research_Export",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/apiResearchExportResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/googlerpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/apiResearchExportRequest"
+            }
+          }
+        ],
+        "tags": [
+          "Research"
+        ]
+      }
+    },
+    "/api.Research/StudyMetadata": {
+      "post": {
+        "summary": "StudyMetadata returns enrolled users, metric series, and scopes.",
+        "operationId": "Research_StudyMetadata",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/apiStudyMetadataResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/googlerpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/apiStudyMetadataRequest"
+            }
+          }
+        ],
+        "tags": [
+          "Research"
+        ]
+      }
+    }
+  },
+  "definitions": {
+    "apiMetric": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "ts": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "created": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updated": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "deleted": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "sessionId": {
+          "type": "string"
+        },
+        "type": {
+          "type": "string"
+        },
+        "value": {
+          "type": "string"
+        },
+        "series": {
+          "type": "string"
+        },
+        "durationMicros": {
+          "type": "string",
+          "format": "int64"
+        }
+      }
+    },
+    "apiResearchExportRequest": {
+      "type": "object",
+      "properties": {
+        "studyId": {
+          "type": "string"
+        },
+        "gtTs": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Query metrics in the interval (gt_ts, lt_ts)."
+        },
+        "ltTs": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "page": {
+          "type": "integer",
+          "format": "int32"
+        }
+      },
+      "title": "Export RPCs"
+    },
+    "apiResearchExportResponse": {
+      "type": "object",
+      "properties": {
+        "studyId": {
+          "type": "string"
+        },
+        "sessions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/apiResearchExportedSession"
+          }
+        },
+        "page": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "count": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "hasMore": {
+          "type": "boolean"
+        }
+      }
+    },
+    "apiResearchExportedSession": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "created": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updated": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "startTs": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "endTs": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "deviceId": {
+          "type": "string"
+        },
+        "userId": {
+          "type": "string"
+        },
+        "status": {
+          "$ref": "#/definitions/apiSessionStatus"
+        },
+        "metrics": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/apiMetric"
+          }
+        }
+      }
+    },
+    "apiSessionStatus": {
+      "type": "string",
+      "enum": [
+        "UNKNOWN_STATUS",
+        "RECORDING",
+        "PROCESSING",
+        "DONE",
+        "ERROR",
+        "BACKFILLING",
+        "SKIPPED"
+      ],
+      "default": "UNKNOWN_STATUS",
+      "title": "NOTE: In the future, we want to embed enums and sub-message types into the\nparent type. See:\nhttps://github.com/thronesci/schema/pull/1#discussion_r1348000908"
+    },
+    "apiStudyMetadataRequest": {
+      "type": "object",
+      "properties": {
+        "studyId": {
+          "type": "string"
+        }
+      },
+      "title": "StudyMetadata RPCs"
+    },
+    "apiStudyMetadataResponse": {
+      "type": "object",
+      "properties": {
+        "studyId": {
+          "type": "string"
+        },
+        "userIds": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "user_ids are the user IDs enrolled in the research project."
+        },
+        "series": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "series are the metric series included in the study."
+        }
+      }
+    },
+    "googlerpcStatus": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "details": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/protobufAny"
+          }
+        }
+      }
+    },
+    "protobufAny": {
+      "type": "object",
+      "properties": {
+        "@type": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": {}
+    }
+  }
+}

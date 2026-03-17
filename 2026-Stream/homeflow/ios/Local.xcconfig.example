@@ -1,0 +1,4 @@
+// Copy this file to Local.xcconfig and set your team ID
+// Find your team ID: open Keychain Access, find your "Apple Development" cert, look at "Organizational Unit"
+// Or in Xcode: Preferences > Accounts > select your Apple ID > look at Team ID
+DEVELOPMENT_TEAM = YOUR_TEAM_ID_HERE

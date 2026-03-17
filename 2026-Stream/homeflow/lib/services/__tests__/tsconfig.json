@@ -1,0 +1,12 @@
+{
+  "extends": "../../../tsconfig.json",
+  "compilerOptions": {
+    "types": ["jest", "node"]
+  },
+  "include": [
+    "./**/*.test.ts",
+    "../**/*.ts",
+    "../../../lib/constants.ts"
+  ],
+  "exclude": []
+}

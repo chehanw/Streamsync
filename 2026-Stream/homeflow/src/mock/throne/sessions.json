@@ -1,0 +1,1151 @@
+[
+  {
+    "id": "SE-1bfbe1a0-2c21-47f2-b03a-a19ffbff1e87",
+    "tags": [
+      "pee"
+    ],
+    "created": "2026-02-09T22:43:33.166660Z",
+    "updated": "2026-02-09T23:03:35.177503Z",
+    "startTs": "2026-02-09T22:42:11.752Z",
+    "endTs": "2026-02-09T23:02:12.092Z",
+    "deviceId": "THRN-11C00027",
+    "userId": "auth0|6542819f4a074c95cf9b873f",
+    "status": "DONE",
+    "metricCount": 49
+  },
+  {
+    "id": "SE-f0e7c82c-e32c-429c-9499-f1985d2b999c",
+    "tags": [
+      "poo",
+      "pee"
+    ],
+    "created": "2026-02-09T17:49:48.614407Z",
+    "updated": "2026-02-09T17:57:11.115072Z",
+    "startTs": "2026-02-09T17:49:02.402Z",
+    "endTs": "2026-02-09T17:56:29.182Z",
+    "deviceId": "THRN-11C00027",
+    "userId": "auth0|6542819f4a074c95cf9b873f",
+    "status": "DONE",
+    "metricCount": 0
+  },
+  {
+    "id": "SE-a8e92cb6-878f-4deb-a7a1-f3e90db1c436",
+    "tags": [],
+    "created": "2026-02-09T16:48:20.717535Z",
+    "updated": "2026-02-09T16:48:30.922482Z",
+    "startTs": "2026-02-09T16:48:03.556Z",
+    "endTs": "2026-02-09T16:48:11.410Z",
+    "deviceId": "THRN-11C00027",
+    "userId": "auth0|6542819f4a074c95cf9b873f",
+    "status": "DONE",
+    "metricCount": 0
+  },
+  {
+    "id": "SE-f1380392-d466-4969-8a20-5d3e003cbb0d",
+    "tags": [
+      "poo",
+      "pee"
+    ],
+    "created": "2026-02-09T16:43:21.507219Z",
+    "updated": "2026-02-09T16:48:08.166261Z",
+    "startTs": "2026-02-09T16:42:15.865Z",
+    "endTs": "2026-02-09T16:47:27.602Z",
+    "deviceId": "THRN-11C00027",
+    "userId": "auth0|6542819f4a074c95cf9b873f",
+    "status": "DONE",
+    "metricCount": 0
+  },
+  {
+    "id": "SE-ac740c8b-f8ba-42f9-939d-1a70fe12b005",
+    "tags": [],
+    "created": "2026-02-09T16:41:58.602965Z",
+    "updated": "2026-02-09T16:42:17.726601Z",
+    "startTs": "2026-02-09T16:41:31.589Z",
+    "endTs": "2026-02-09T16:41:50.707Z",
+    "deviceId": "THRN-11C00027",
+    "userId": "auth0|6542819f4a074c95cf9b873f",
+    "status": "DONE",
+    "metricCount": 0
+  },
+  {
+    "id": "SE-530c753e-0c11-4595-8fbe-edac3c95a497",
+    "tags": [
+      "poo",
+      "pee"
+    ],
+    "created": "2026-02-09T15:41:43.438091Z",
+    "updated": "2026-02-09T15:53:19.533701Z",
+    "startTs": "2026-02-09T15:41:05.542Z",
+    "endTs": "2026-02-09T15:52:17.670Z",
+    "deviceId": "THRN-11A00031",
+    "userId": "auth0|6542819f4a074c95cf9b873f",
+    "status": "DONE",
+    "metricCount": 0
+  },
+  {
+    "id": "SE-8681b43b-16b9-4ff7-a97e-cf9d293c25e8",
+    "tags": [
+      "pee"
+    ],
+    "created": "2026-02-09T13:44:58.300737Z",
+    "updated": "2026-02-09T13:45:36.541143Z",
+    "startTs": "2026-02-09T13:44:20.150Z",
+    "endTs": "2026-02-09T13:45:12.031Z",
+    "deviceId": "THRN-11C00033",
+    "userId": "auth0|6542819f4a074c95cf9b873f",
+    "status": "DONE",
+    "metricCount": 77
+  },
+  {
+    "id": "SE-23232098-d8b5-4724-b5b9-f3ffaaba0af4",
+    "tags": [
+      "pee"
+    ],
+    "created": "2026-02-09T06:16:17.477850Z",
+    "updated": "2026-02-09T06:16:40.774623Z",
+    "startTs": "2026-02-09T06:15:48.953Z",
+    "endTs": "2026-02-09T06:16:11.313Z",
+    "deviceId": "THRN-11A00031",
+    "userId": "auth0|6542819f4a074c95cf9b873f",
+    "status": "DONE",
+    "metricCount": 39
+  },
+  {
+    "id": "SE-4f53e571-118d-4810-925c-d2a1f8651e58",
+    "tags": [
+      "dirty",
+      "pee"
+    ],
+    "created": "2026-02-09T04:05:28.980321Z",
+    "updated": "2026-02-09T04:05:44.633879Z",
+    "startTs": "2026-02-09T04:04:53.038Z",
+    "endTs": "2026-02-09T04:05:22.150Z",
+    "deviceId": "THRN-11A00031",
+    "userId": "auth0|6542819f4a074c95cf9b873f",
+    "status": "DONE",
+    "metricCount": 10
+  },
+  {
+    "id": "SE-1f365706-eb33-4281-8e26-41f296975ac2",
+    "tags": [],
+    "created": "2026-02-09T00:50:05.333206Z",
+    "updated": "2026-02-09T00:50:19.380893Z",
+    "startTs": "2026-02-09T00:49:47.456Z",
+    "endTs": "2026-02-09T00:50:00.818Z",
+    "deviceId": "THRN-11C00033",
+    "userId": "auth0|6542819f4a074c95cf9b873f",
+    "status": "DONE",
+    "metricCount": 0
+  },
+  {
+    "id": "SE-6b5349b5-0394-4f36-8e51-5c3b81600c8c",
+    "tags": [],
+    "created": "2026-02-08T22:02:10.785399Z",
+    "updated": "2026-02-08T22:02:20.802116Z",
+    "startTs": "2026-02-08T22:01:56.635Z",
+    "endTs": "2026-02-08T22:02:06.036Z",
+    "deviceId": "THRN-11C00033",
+    "userId": "auth0|6542819f4a074c95cf9b873f",
+    "status": "DONE",
+    "metricCount": 0
+  },
+  {
+    "id": "SE-f4e2e82a-c8d8-4848-860c-d1b926151b22",
+    "tags": [
+      "poo",
+      "pee",
+      "dirty"
+    ],
+    "created": "2026-02-08T18:59:23.540894Z",
+    "updated": "2026-02-08T19:06:27.603068Z",
+    "startTs": "2026-02-08T18:58:45.835Z",
+    "endTs": "2026-02-08T19:05:49.144Z",
+    "deviceId": "THRN-11A00031",
+    "userId": "auth0|6542819f4a074c95cf9b873f",
+    "status": "DONE",
+    "metricCount": 0
+  },
+  {
+    "id": "SE-a183ea39-1667-4b82-a4c3-2ef2ff877512",
+    "tags": [
+      "pee"
+    ],
+    "created": "2026-02-08T13:26:53.752054Z",
+    "updated": "2026-02-08T13:27:14.164378Z",
+    "startTs": "2026-02-08T13:26:31.321Z",
+    "endTs": "2026-02-08T13:26:48.679Z",
+    "deviceId": "THRN-11C00033",
+    "userId": "auth0|6542819f4a074c95cf9b873f",
+    "status": "DONE",
+    "metricCount": 25
+  },
+  {
+    "id": "SE-b14056e7-3e2d-4d5d-834d-8a67161f9a33",
+    "tags": [
+      "pee"
+    ],
+    "created": "2026-02-08T10:53:19.439463Z",
+    "updated": "2026-02-08T10:53:36.411289Z",
+    "startTs": "2026-02-08T10:52:58.875Z",
+    "endTs": "2026-02-08T10:53:14.491Z",
+    "deviceId": "THRN-11A00031",
+    "userId": "auth0|6542819f4a074c95cf9b873f",
+    "status": "DONE",
+    "metricCount": 17
+  },
+  {
+    "id": "SE-f4c1441f-8e10-412c-9e54-ed7d5a965817",
+    "tags": [
+      "pee"
+    ],
+    "created": "2026-02-08T06:16:05.269600Z",
+    "updated": "2026-02-08T06:16:28.385733Z",
+    "startTs": "2026-02-08T06:15:27.506Z",
+    "endTs": "2026-02-08T06:15:59.868Z",
+    "deviceId": "THRN-11A00031",
+    "userId": "auth0|6542819f4a074c95cf9b873f",
+    "status": "DONE",
+    "metricCount": 55
+  },
+  {
+    "id": "SE-0a19ac2d-9899-488b-8177-042af820e563",
+    "tags": [
+      "dirty",
+      "pee"
+    ],
+    "created": "2026-02-08T03:42:19.625183Z",
+    "updated": "2026-02-08T03:42:39.554534Z",
+    "startTs": "2026-02-08T03:41:42.257Z",
+    "endTs": "2026-02-08T03:42:19.632Z",
+    "deviceId": "THRN-11C00033",
+    "userId": "auth0|6542819f4a074c95cf9b873f",
+    "status": "DONE",
+    "metricCount": 55
+  },
+  {
+    "id": "SE-56461566-b35a-48e3-b114-b7c10b730983",
+    "tags": [
+      "pee"
+    ],
+    "created": "2026-02-08T00:31:01.146082Z",
+    "updated": "2026-02-08T00:39:35.279388Z",
+    "startTs": "2026-02-08T00:30:23.746Z",
+    "endTs": "2026-02-08T00:39:04.069Z",
+    "deviceId": "THRN-11A00031",
+    "userId": "auth0|6542819f4a074c95cf9b873f",
+    "status": "DONE",
+    "metricCount": 57
+  },
+  {
+    "id": "SE-7169f838-12c9-4758-98c6-ecaa6888836a",
+    "tags": [
+      "poo",
+      "pee"
+    ],
+    "created": "2026-02-07T22:41:45.980439Z",
+    "updated": "2026-02-07T22:45:39.395321Z",
+    "startTs": "2026-02-07T22:41:08.702Z",
+    "endTs": "2026-02-07T22:45:13.415Z",
+    "deviceId": "THRN-11A00031",
+    "userId": "auth0|6542819f4a074c95cf9b873f",
+    "status": "DONE",
+    "metricCount": 0
+  },
+  {
+    "id": "SE-fe349654-d13a-4571-aa92-d789bf2f753b",
+    "tags": [
+      "pee",
+      "dirty",
+      "poo"
+    ],
+    "created": "2026-02-07T22:27:16.428264Z",
+    "updated": "2026-02-07T22:37:11.296763Z",
+    "startTs": "2026-02-07T22:26:39.003Z",
+    "endTs": "2026-02-07T22:36:30.863Z",
+    "deviceId": "THRN-11A00031",
+    "userId": "auth0|6542819f4a074c95cf9b873f",
+    "status": "DONE",
+    "metricCount": 0
+  },
+  {
+    "id": "SE-b3d457a0-aada-48b9-80b0-6c9fec842a3a",
+    "tags": [
+      "poo",
+      "pee"
+    ],
+    "created": "2026-02-07T17:29:06.743181Z",
+    "updated": "2026-02-07T17:35:30.871647Z",
+    "startTs": "2026-02-07T17:28:28.680Z",
+    "endTs": "2026-02-07T17:34:53.017Z",
+    "deviceId": "THRN-11A00031",
+    "userId": "auth0|6542819f4a074c95cf9b873f",
+    "status": "DONE",
+    "metricCount": 0
+  },
+  {
+    "id": "SE-b5bbbd80-e5b8-42cc-a28a-a75981992ed4",
+    "tags": [
+      "pee"
+    ],
+    "created": "2026-02-07T14:22:38.907006Z",
+    "updated": "2026-02-07T14:23:19.194735Z",
+    "startTs": "2026-02-07T14:22:00.644Z",
+    "endTs": "2026-02-07T14:22:57.028Z",
+    "deviceId": "THRN-11C00033",
+    "userId": "auth0|6542819f4a074c95cf9b873f",
+    "status": "DONE",
+    "metricCount": 10
+  },
+  {
+    "id": "SE-07d90e64-ea74-4983-bbb1-e6aeb1e7dd9c",
+    "tags": [
+      "pee"
+    ],
+    "created": "2026-02-07T09:39:06.749257Z",
+    "updated": "2026-02-07T09:40:01.199592Z",
+    "startTs": "2026-02-07T09:38:29.063Z",
+    "endTs": "2026-02-07T09:39:35.699Z",
+    "deviceId": "THRN-11C00033",
+    "userId": "auth0|6542819f4a074c95cf9b873f",
+    "status": "DONE",
+    "metricCount": 29
+  },
+  {
+    "id": "SE-ec1700fe-893e-43a6-a639-c205ecc049cc",
+    "tags": [
+      "pee"
+    ],
+    "created": "2026-02-07T05:19:24.380750Z",
+    "updated": "2026-02-07T05:19:42.499296Z",
+    "startTs": "2026-02-07T05:18:46.297Z",
+    "endTs": "2026-02-07T05:19:23.423Z",
+    "deviceId": "THRN-11A00031",
+    "userId": "auth0|6542819f4a074c95cf9b873f",
+    "status": "DONE",
+    "metricCount": 17
+  },
+  {
+    "id": "SE-0370c502-11c9-4be6-8d1a-032e3d264b06",
+    "tags": [
+      "pee"
+    ],
+    "created": "2026-02-07T02:26:18.306520Z",
+    "updated": "2026-02-07T02:30:44.123938Z",
+    "startTs": "2026-02-07T02:25:40.624Z",
+    "endTs": "2026-02-07T02:30:18.609Z",
+    "deviceId": "THRN-11A00031",
+    "userId": "auth0|6542819f4a074c95cf9b873f",
+    "status": "DONE",
+    "metricCount": 55
+  },
+  {
+    "id": "SE-705be4c9-176e-4629-abed-8f9b1dd26d0b",
+    "tags": [
+      "poo",
+      "pee"
+    ],
+    "created": "2026-02-06T23:08:25.257432Z",
+    "updated": "2026-02-06T23:10:57.586452Z",
+    "startTs": "2026-02-06T23:07:13.436Z",
+    "endTs": "2026-02-06T23:10:00.142Z",
+    "deviceId": "THRN-11C00027",
+    "userId": "auth0|6542819f4a074c95cf9b873f",
+    "status": "DONE",
+    "metricCount": 0
+  },
+  {
+    "id": "SE-b3c9890d-67e7-4ad6-957e-62ff537aa085",
+    "tags": [
+      "pee"
+    ],
+    "created": "2026-02-06T22:04:20.400015Z",
+    "updated": "2026-02-06T22:04:42.592569Z",
+    "startTs": "2026-02-06T22:03:18.569Z",
+    "endTs": "2026-02-06T22:04:05.451Z",
+    "deviceId": "THRN-11C00027",
+    "userId": "auth0|6542819f4a074c95cf9b873f",
+    "status": "DONE",
+    "metricCount": 33
+  },
+  {
+    "id": "SE-e28218fe-67f2-4fe9-ae9f-7f93f38f1392",
+    "tags": [
+      "pee"
+    ],
+    "created": "2026-02-06T17:12:23.056234Z",
+    "updated": "2026-02-06T17:15:33.428015Z",
+    "startTs": "2026-02-06T17:11:15.260Z",
+    "endTs": "2026-02-06T17:14:43.960Z",
+    "deviceId": "THRN-11C00027",
+    "userId": "auth0|6542819f4a074c95cf9b873f",
+    "status": "DONE",
+    "metricCount": 32
+  },
+  {
+    "id": "SE-48518ed1-c7b4-4913-850c-b7f1d245911e",
+    "tags": [
+      "poo",
+      "pee"
+    ],
+    "created": "2026-02-06T15:19:21.665261Z",
+    "updated": "2026-02-06T15:28:08.825262Z",
+    "startTs": "2026-02-06T15:18:23.100Z",
+    "endTs": "2026-02-06T15:26:40.401Z",
+    "deviceId": "THRN-11C00027",
+    "userId": "auth0|6542819f4a074c95cf9b873f",
+    "status": "DONE",
+    "metricCount": 0
+  },
+  {
+    "id": "SE-45696a9b-fc3b-4f64-a3d0-d6941a669a96",
+    "tags": [
+      "poo",
+      "pee"
+    ],
+    "created": "2026-02-06T14:41:05.753715Z",
+    "updated": "2026-02-06T14:44:26.676635Z",
+    "startTs": "2026-02-06T14:40:03.150Z",
+    "endTs": "2026-02-06T14:43:46.896Z",
+    "deviceId": "THRN-11C00027",
+    "userId": "auth0|6542819f4a074c95cf9b873f",
+    "status": "DONE",
+    "metricCount": 0
+  },
+  {
+    "id": "SE-654085fe-21ee-420f-bdc4-17d59361189f",
+    "tags": [
+      "pee"
+    ],
+    "created": "2026-02-06T13:04:16.327840Z",
+    "updated": "2026-02-06T13:04:51.028947Z",
+    "startTs": "2026-02-06T13:03:38.196Z",
+    "endTs": "2026-02-06T13:04:30.077Z",
+    "deviceId": "THRN-11C00033",
+    "userId": "auth0|6542819f4a074c95cf9b873f",
+    "status": "DONE",
+    "metricCount": 63
+  },
+  {
+    "id": "SE-898bad03-7765-4fce-a9fa-5838f142b00f",
+    "tags": [
+      "pee"
+    ],
+    "created": "2026-02-06T07:13:17.402037Z",
+    "updated": "2026-02-06T07:14:15.225190Z",
+    "startTs": "2026-02-06T07:12:39.836Z",
+    "endTs": "2026-02-06T07:13:52.735Z",
+    "deviceId": "THRN-11A00031",
+    "userId": "auth0|6542819f4a074c95cf9b873f",
+    "status": "DONE",
+    "metricCount": 35
+  },
+  {
+    "id": "SE-2120a838-c732-41fa-aeac-bbd9d6a7df97",
+    "tags": [
+      "pee"
+    ],
+    "created": "2026-02-06T06:45:03.400292Z",
+    "updated": "2026-02-06T06:45:21.359039Z",
+    "startTs": "2026-02-06T06:44:27.056Z",
+    "endTs": "2026-02-06T06:44:56.429Z",
+    "deviceId": "THRN-11A00031",
+    "userId": "auth0|6542819f4a074c95cf9b873f",
+    "status": "DONE",
+    "metricCount": 47
+  },
+  {
+    "id": "SE-d81dc8db-06f6-4c52-8cf7-09b3324693c1",
+    "tags": [],
+    "created": "2026-02-06T05:49:14.033183Z",
+    "updated": "2026-02-06T05:49:22.263756Z",
+    "startTs": "2026-02-06T05:49:03.874Z",
+    "endTs": "2026-02-06T05:49:11.477Z",
+    "deviceId": "THRN-11A00031",
+    "userId": "auth0|6542819f4a074c95cf9b873f",
+    "status": "DONE",
+    "metricCount": 0
+  },
+  {
+    "id": "SE-5aa42814-a604-408d-9170-16612d19a10b",
+    "tags": [
+      "pee"
+    ],
+    "created": "2026-02-06T05:42:09.824783Z",
+    "updated": "2026-02-06T05:49:35.223623Z",
+    "startTs": "2026-02-06T05:41:31.674Z",
+    "endTs": "2026-02-06T05:49:01.717Z",
+    "deviceId": "THRN-11A00031",
+    "userId": "auth0|6542819f4a074c95cf9b873f",
+    "status": "DONE",
+    "metricCount": 77
+  },
+  {
+    "id": "SE-b04716a8-c33f-4426-9391-0d03d8d84928",
+    "tags": [
+      "pee"
+    ],
+    "created": "2026-02-06T03:16:15.607699Z",
+    "updated": "2026-02-06T03:16:35.987664Z",
+    "startTs": "2026-02-06T03:15:37.970Z",
+    "endTs": "2026-02-06T03:16:17.856Z",
+    "deviceId": "THRN-11C00033",
+    "userId": "auth0|6542819f4a074c95cf9b873f",
+    "status": "DONE",
+    "metricCount": 33
+  },
+  {
+    "id": "SE-ecec680f-331a-45dc-8fa4-93480f7acc1d",
+    "tags": [
+      "pee"
+    ],
+    "created": "2026-02-06T00:55:03.954573Z",
+    "updated": "2026-02-06T00:55:31.569349Z",
+    "startTs": "2026-02-06T00:54:20.106Z",
+    "endTs": "2026-02-06T00:55:10.987Z",
+    "deviceId": "THRN-11C00027",
+    "userId": "auth0|6542819f4a074c95cf9b873f",
+    "status": "DONE",
+    "metricCount": 47
+  },
+  {
+    "id": "SE-747c931b-512c-475a-b160-6f838985fad9",
+    "tags": [
+      "pee"
+    ],
+    "created": "2026-02-05T21:49:38.353714Z",
+    "updated": "2026-02-05T21:53:49.794477Z",
+    "startTs": "2026-02-05T21:48:57.295Z",
+    "endTs": "2026-02-05T21:53:20.006Z",
+    "deviceId": "THRN-11C00027",
+    "userId": "auth0|6542819f4a074c95cf9b873f",
+    "status": "DONE",
+    "metricCount": 33
+  },
+  {
+    "id": "SE-31dac5c5-ed3c-4886-b836-6287a540653b",
+    "tags": [
+      "pee"
+    ],
+    "created": "2026-02-05T19:38:13.815519Z",
+    "updated": "2026-02-05T19:38:41.915175Z",
+    "startTs": "2026-02-05T19:37:14.460Z",
+    "endTs": "2026-02-05T19:38:02.347Z",
+    "deviceId": "THRN-11C00027",
+    "userId": "auth0|6542819f4a074c95cf9b873f",
+    "status": "DONE",
+    "metricCount": 45
+  },
+  {
+    "id": "SE-43d1a0b8-5c6d-4e28-b7b7-1a84eb5a3872",
+    "tags": [
+      "pee"
+    ],
+    "created": "2026-02-05T19:34:02.219524Z",
+    "updated": "2026-02-05T19:36:59.647565Z",
+    "startTs": "2026-02-05T19:33:17.224Z",
+    "endTs": "2026-02-05T19:36:01.907Z",
+    "deviceId": "THRN-11C00027",
+    "userId": "auth0|6542819f4a074c95cf9b873f",
+    "status": "DONE",
+    "metricCount": 47
+  },
+  {
+    "id": "SE-598fb3ae-f910-4603-8068-6cd4b19d4664",
+    "tags": [
+      "pee"
+    ],
+    "created": "2026-02-05T13:35:12.092569Z",
+    "updated": "2026-02-05T13:35:50.991102Z",
+    "startTs": "2026-02-05T13:34:33.960Z",
+    "endTs": "2026-02-05T13:35:27.591Z",
+    "deviceId": "THRN-11C00033",
+    "userId": "auth0|6542819f4a074c95cf9b873f",
+    "status": "DONE",
+    "metricCount": 63
+  },
+  {
+    "id": "SE-06d03b36-8e7b-4eb7-9af1-f0682b2cedc5",
+    "tags": [
+      "pee"
+    ],
+    "created": "2026-02-05T07:27:57.653666Z",
+    "updated": "2026-02-05T07:28:18.668458Z",
+    "startTs": "2026-02-05T07:27:19.427Z",
+    "endTs": "2026-02-05T07:27:56.553Z",
+    "deviceId": "THRN-11C00033",
+    "userId": "auth0|6542819f4a074c95cf9b873f",
+    "status": "DONE",
+    "metricCount": 57
+  },
+  {
+    "id": "SE-5a0dddac-e224-4992-afe4-f0f9619046d1",
+    "tags": [
+      "pee"
+    ],
+    "created": "2026-02-05T06:34:12.413031Z",
+    "updated": "2026-02-05T06:34:36.628655Z",
+    "startTs": "2026-02-05T06:33:34.888Z",
+    "endTs": "2026-02-05T06:34:14.764Z",
+    "deviceId": "THRN-11C00033",
+    "userId": "auth0|6542819f4a074c95cf9b873f",
+    "status": "DONE",
+    "metricCount": 57
+  },
+  {
+    "id": "SE-f279edca-0b2b-47da-9206-75b69a75faeb",
+    "tags": [
+      "pee"
+    ],
+    "created": "2026-02-05T04:50:37.324619Z",
+    "updated": "2026-02-05T04:50:55.441001Z",
+    "startTs": "2026-02-05T04:49:59.113Z",
+    "endTs": "2026-02-05T04:50:35.988Z",
+    "deviceId": "THRN-11C00033",
+    "userId": "auth0|6542819f4a074c95cf9b873f",
+    "status": "DONE",
+    "metricCount": 45
+  },
+  {
+    "id": "SE-ab3112e4-146d-4dc5-986e-f498c3b89ef6",
+    "tags": [
+      "pee"
+    ],
+    "created": "2026-02-05T04:27:47.712229Z",
+    "updated": "2026-02-05T04:28:25.080715Z",
+    "startTs": "2026-02-05T04:27:09.807Z",
+    "endTs": "2026-02-05T04:28:02.188Z",
+    "deviceId": "THRN-11C00033",
+    "userId": "auth0|6542819f4a074c95cf9b873f",
+    "status": "DONE",
+    "metricCount": 81
+  },
+  {
+    "id": "SE-15af9d4d-8a0f-4b06-850c-91e8787bfa2e",
+    "tags": [
+      "pee"
+    ],
+    "created": "2026-02-05T03:01:05.428232Z",
+    "updated": "2026-02-05T03:01:25.560432Z",
+    "startTs": "2026-02-05T03:00:27.938Z",
+    "endTs": "2026-02-05T03:01:07.065Z",
+    "deviceId": "THRN-11C00033",
+    "userId": "auth0|6542819f4a074c95cf9b873f",
+    "status": "DONE",
+    "metricCount": 55
+  },
+  {
+    "id": "SE-743449de-ac49-4217-b276-4a8baaec45d1",
+    "tags": [
+      "not_toilet"
+    ],
+    "created": "2026-02-04T21:18:42.619961Z",
+    "updated": "2026-02-04T21:18:42.738401Z",
+    "startTs": "2026-02-04T21:18:39.044Z",
+    "endTs": "2026-02-04T21:18:39.645Z",
+    "deviceId": "THRN-11C00067",
+    "userId": "auth0|6542819f4a074c95cf9b873f",
+    "status": "SKIPPED",
+    "metricCount": 0
+  },
+  {
+    "id": "SE-719d7edd-5464-4259-bb7b-614233181ef8",
+    "tags": [
+      "pee"
+    ],
+    "created": "2026-02-04T20:05:17.657672Z",
+    "updated": "2026-02-04T20:06:10.158950Z",
+    "startTs": "2026-02-04T20:04:33.233Z",
+    "endTs": "2026-02-04T20:05:15.849Z",
+    "deviceId": "THRN-11C00027",
+    "userId": "auth0|6542819f4a074c95cf9b873f",
+    "status": "DONE",
+    "metricCount": 33
+  },
+  {
+    "id": "SE-e1e53982-e5b0-4df1-bc74-8820867f0c84",
+    "tags": [
+      "pee"
+    ],
+    "created": "2026-02-04T18:51:22.520327Z",
+    "updated": "2026-02-04T18:52:03.281801Z",
+    "startTs": "2026-02-04T18:50:07.872Z",
+    "endTs": "2026-02-04T18:50:55.758Z",
+    "deviceId": "THRN-11C00027",
+    "userId": "auth0|6542819f4a074c95cf9b873f",
+    "status": "DONE",
+    "metricCount": 63
+  },
+  {
+    "id": "SE-79402bb2-434a-46d7-847d-7706727c762b",
+    "tags": [
+      "not_toilet"
+    ],
+    "created": "2026-02-04T15:56:00.139242Z",
+    "updated": "2026-02-04T16:03:17.856791Z",
+    "startTs": "2026-02-04T15:55:21.457Z",
+    "endTs": "2026-02-04T16:03:13.747Z",
+    "deviceId": "THRN-11C00067",
+    "userId": "auth0|6542819f4a074c95cf9b873f",
+    "status": "SKIPPED",
+    "metricCount": 0
+  },
+  {
+    "id": "SE-cd47b0b3-84e6-4697-893a-42d3a9c917f6",
+    "tags": [
+      "pee"
+    ],
+    "created": "2026-02-04T13:54:48.008732Z",
+    "updated": "2026-02-04T13:55:54.395795Z",
+    "startTs": "2026-02-04T13:54:09.721Z",
+    "endTs": "2026-02-04T13:55:13.616Z",
+    "deviceId": "THRN-11C00033",
+    "userId": "auth0|6542819f4a074c95cf9b873f",
+    "status": "DONE",
+    "metricCount": 55
+  },
+  {
+    "id": "SE-532b76d8-a316-4774-b400-4dae36a26d55",
+    "tags": [
+      "pee"
+    ],
+    "created": "2026-02-04T07:27:15.909167Z",
+    "updated": "2026-02-04T07:27:36.191001Z",
+    "startTs": "2026-02-04T07:26:36.783Z",
+    "endTs": "2026-02-04T07:27:16.409Z",
+    "deviceId": "THRN-11C00033",
+    "userId": "auth0|6542819f4a074c95cf9b873f",
+    "status": "DONE",
+    "metricCount": 49
+  },
+  {
+    "id": "SE-170de81a-391b-4dd7-8f20-13e23084cd4b",
+    "tags": [
+      "pee"
+    ],
+    "created": "2026-02-04T06:41:56.874015Z",
+    "updated": "2026-02-04T06:42:28.193874Z",
+    "startTs": "2026-02-04T06:41:19.333Z",
+    "endTs": "2026-02-04T06:42:08.463Z",
+    "deviceId": "THRN-11C00033",
+    "userId": "auth0|6542819f4a074c95cf9b873f",
+    "status": "DONE",
+    "metricCount": 57
+  },
+  {
+    "id": "SE-6377b394-8d91-4e41-8a1c-ee1a5990568c",
+    "tags": [
+      "pee"
+    ],
+    "created": "2026-02-04T05:35:21.393087Z",
+    "updated": "2026-02-04T05:35:49.398932Z",
+    "startTs": "2026-02-04T05:34:44.223Z",
+    "endTs": "2026-02-04T05:35:31.352Z",
+    "deviceId": "THRN-11C00033",
+    "userId": "auth0|6542819f4a074c95cf9b873f",
+    "status": "DONE",
+    "metricCount": 67
+  },
+  {
+    "id": "SE-b9b6da9f-b5fb-4064-be49-066092010061",
+    "tags": [
+      "pee"
+    ],
+    "created": "2026-02-04T04:44:09.153159Z",
+    "updated": "2026-02-04T04:45:13.394653Z",
+    "startTs": "2026-02-04T04:43:31.306Z",
+    "endTs": "2026-02-04T04:44:25.438Z",
+    "deviceId": "THRN-11C00033",
+    "userId": "auth0|6542819f4a074c95cf9b873f",
+    "status": "DONE",
+    "metricCount": 61
+  },
+  {
+    "id": "SE-272a7afe-09fd-4fda-bce7-dac2a6d0372a",
+    "tags": [
+      "pee"
+    ],
+    "created": "2026-02-04T03:58:54.984815Z",
+    "updated": "2026-02-04T03:59:32.671502Z",
+    "startTs": "2026-02-04T03:58:17.743Z",
+    "endTs": "2026-02-04T03:58:50.616Z",
+    "deviceId": "THRN-11C00033",
+    "userId": "auth0|6542819f4a074c95cf9b873f",
+    "status": "DONE",
+    "metricCount": 39
+  },
+  {
+    "id": "SE-c7ba0818-2ba9-4cb4-9501-9d4de78e123e",
+    "tags": [
+      "pee"
+    ],
+    "created": "2026-02-04T02:48:51.926965Z",
+    "updated": "2026-02-04T02:50:04.569639Z",
+    "startTs": "2026-02-04T02:48:12.800Z",
+    "endTs": "2026-02-04T02:48:44.673Z",
+    "deviceId": "THRN-11C00033",
+    "userId": "auth0|6542819f4a074c95cf9b873f",
+    "status": "DONE",
+    "metricCount": 47
+  },
+  {
+    "id": "SE-b654ced8-fcca-4890-b1ee-5f53e43de8b3",
+    "tags": [
+      "pee"
+    ],
+    "created": "2026-02-03T22:57:14.812752Z",
+    "updated": "2026-02-03T23:03:05.196315Z",
+    "startTs": "2026-02-03T22:56:31.827Z",
+    "endTs": "2026-02-03T23:01:54.618Z",
+    "deviceId": "THRN-11C00027",
+    "userId": "auth0|6542819f4a074c95cf9b873f",
+    "status": "DONE",
+    "metricCount": 65
+  },
+  {
+    "id": "SE-b1411a7c-e6e5-4b50-97b2-ee4e3825960f",
+    "tags": [
+      "not_toilet"
+    ],
+    "created": "2026-02-03T21:53:21.026738Z",
+    "updated": "2026-02-03T21:53:21.116737Z",
+    "startTs": "2026-02-03T21:53:18.014Z",
+    "endTs": "2026-02-03T21:53:18.014Z",
+    "deviceId": "THRN-11C00067",
+    "userId": "auth0|6542819f4a074c95cf9b873f",
+    "status": "SKIPPED",
+    "metricCount": 0
+  },
+  {
+    "id": "SE-85fb91e2-578a-4b79-b242-dfcda6680354",
+    "tags": [
+      "not_toilet"
+    ],
+    "created": "2026-02-03T21:53:09.974204Z",
+    "updated": "2026-02-03T21:53:10.105113Z",
+    "startTs": "2026-02-03T21:53:00.851Z",
+    "endTs": "2026-02-03T21:53:04.953Z",
+    "deviceId": "THRN-11C00067",
+    "userId": "auth0|6542819f4a074c95cf9b873f",
+    "status": "SKIPPED",
+    "metricCount": 0
+  },
+  {
+    "id": "SE-b2bc7a58-67db-446f-83ff-8f6628f98c5c",
+    "tags": [
+      "not_toilet"
+    ],
+    "created": "2026-02-03T21:52:35.133313Z",
+    "updated": "2026-02-03T21:52:35.256086Z",
+    "startTs": "2026-02-03T21:52:31.289Z",
+    "endTs": "2026-02-03T21:52:31.640Z",
+    "deviceId": "THRN-11C00067",
+    "userId": "auth0|6542819f4a074c95cf9b873f",
+    "status": "SKIPPED",
+    "metricCount": 0
+  },
+  {
+    "id": "SE-8fc778bf-90d5-4ea0-b9db-193b3db368b1",
+    "tags": [
+      "not_toilet"
+    ],
+    "created": "2026-02-03T21:50:34.689826Z",
+    "updated": "2026-02-03T21:50:34.817445Z",
+    "startTs": "2026-02-03T21:50:18.067Z",
+    "endTs": "2026-02-03T21:50:25.172Z",
+    "deviceId": "THRN-11C00067",
+    "userId": "auth0|6542819f4a074c95cf9b873f",
+    "status": "SKIPPED",
+    "metricCount": 0
+  },
+  {
+    "id": "SE-6638a2ea-d681-4709-add0-96dbf16034cc",
+    "tags": [
+      "not_toilet"
+    ],
+    "created": "2026-02-03T21:43:45.361827Z",
+    "updated": "2026-02-03T21:43:45.498437Z",
+    "startTs": "2026-02-03T21:43:33.707Z",
+    "endTs": "2026-02-03T21:43:39.310Z",
+    "deviceId": "THRN-11C00067",
+    "userId": "auth0|6542819f4a074c95cf9b873f",
+    "status": "SKIPPED",
+    "metricCount": 0
+  },
+  {
+    "id": "SE-fbf1ef81-ba6e-48bd-b5e4-cc24a9ad1119",
+    "tags": [
+      "not_toilet"
+    ],
+    "created": "2026-02-03T21:41:38.481773Z",
+    "updated": "2026-02-03T21:41:38.606461Z",
+    "startTs": "2026-02-03T21:41:30.355Z",
+    "endTs": "2026-02-03T21:41:32.207Z",
+    "deviceId": "THRN-11C00067",
+    "userId": "auth0|6542819f4a074c95cf9b873f",
+    "status": "SKIPPED",
+    "metricCount": 0
+  },
+  {
+    "id": "SE-5cef0c9d-aa63-47ac-945f-6baf7c63cd15",
+    "tags": [
+      "pee"
+    ],
+    "created": "2026-02-03T21:40:48.942758Z",
+    "updated": "2026-02-03T21:41:22.310374Z",
+    "startTs": "2026-02-03T21:40:01.785Z",
+    "endTs": "2026-02-03T21:40:51.676Z",
+    "deviceId": "THRN-11C00027",
+    "userId": "auth0|6542819f4a074c95cf9b873f",
+    "status": "DONE",
+    "metricCount": 55
+  },
+  {
+    "id": "SE-1052a23f-7e7e-4db5-ba26-5c2022e1593f",
+    "tags": [
+      "not_toilet"
+    ],
+    "created": "2026-02-03T21:40:06.846212Z",
+    "updated": "2026-02-03T21:40:06.952552Z",
+    "startTs": "2026-02-03T21:39:30.251Z",
+    "endTs": "2026-02-03T21:39:53.862Z",
+    "deviceId": "THRN-11C00067",
+    "userId": "auth0|6542819f4a074c95cf9b873f",
+    "status": "SKIPPED",
+    "metricCount": 0
+  },
+  {
+    "id": "SE-f118a69c-c730-4787-bed6-92212b112f3c",
+    "tags": [
+      "not_toilet"
+    ],
+    "created": "2026-02-03T21:37:58.160201Z",
+    "updated": "2026-02-03T21:39:06.316679Z",
+    "startTs": "2026-02-03T21:37:17.653Z",
+    "endTs": "2026-02-03T21:39:02.047Z",
+    "deviceId": "THRN-11C00067",
+    "userId": "auth0|6542819f4a074c95cf9b873f",
+    "status": "SKIPPED",
+    "metricCount": 0
+  },
+  {
+    "id": "SE-a4814171-eadb-400c-9da7-6d4eb05eb5aa",
+    "tags": [
+      "not_toilet"
+    ],
+    "created": "2026-02-03T21:37:07.195994Z",
+    "updated": "2026-02-03T21:37:07.312814Z",
+    "startTs": "2026-02-03T21:36:58.384Z",
+    "endTs": "2026-02-03T21:37:01.987Z",
+    "deviceId": "THRN-11C00067",
+    "userId": "auth0|6542819f4a074c95cf9b873f",
+    "status": "SKIPPED",
+    "metricCount": 0
+  },
+  {
+    "id": "SE-c462d421-35a0-461d-9ad3-33b31d913fae",
+    "tags": [
+      "not_toilet"
+    ],
+    "created": "2026-02-03T21:35:26.325731Z",
+    "updated": "2026-02-03T21:35:36.531460Z",
+    "startTs": "2026-02-03T21:34:47.478Z",
+    "endTs": "2026-02-03T21:35:21.591Z",
+    "deviceId": "THRN-11C00067",
+    "userId": "auth0|6542819f4a074c95cf9b873f",
+    "status": "SKIPPED",
+    "metricCount": 0
+  },
+  {
+    "id": "SE-f2853337-1914-4fdf-92fd-669729ad4a4f",
+    "tags": [
+      "not_toilet"
+    ],
+    "created": "2026-02-03T21:34:29.018463Z",
+    "updated": "2026-02-03T21:34:47.996283Z",
+    "startTs": "2026-02-03T21:33:50.825Z",
+    "endTs": "2026-02-03T21:34:41.694Z",
+    "deviceId": "THRN-11C00067",
+    "userId": "auth0|6542819f4a074c95cf9b873f",
+    "status": "SKIPPED",
+    "metricCount": 0
+  },
+  {
+    "id": "SE-09c3e7f8-bba0-44a8-9b24-f3605e051428",
+    "tags": [
+      "not_toilet"
+    ],
+    "created": "2026-02-03T21:33:53.066778Z",
+    "updated": "2026-02-03T21:33:53.280261Z",
+    "startTs": "2026-02-03T21:33:44.170Z",
+    "endTs": "2026-02-03T21:33:46.711Z",
+    "deviceId": "THRN-11C00067",
+    "userId": "auth0|6542819f4a074c95cf9b873f",
+    "status": "SKIPPED",
+    "metricCount": 0
+  },
+  {
+    "id": "SE-3d33a463-f629-4539-a56a-bce3899a8513",
+    "tags": [],
+    "created": "2026-02-03T20:21:12.311453Z",
+    "updated": "2026-02-03T20:21:25.179341Z",
+    "startTs": "2026-02-03T20:20:55.278Z",
+    "endTs": "2026-02-03T20:21:05.881Z",
+    "deviceId": "THRN-11C00027",
+    "userId": "auth0|6542819f4a074c95cf9b873f",
+    "status": "DONE",
+    "metricCount": 0
+  },
+  {
+    "id": "SE-530397f0-c282-4470-95df-0e4cca4e71ab",
+    "tags": [
+      "not_toilet"
+    ],
+    "created": "2026-02-03T20:19:01.313494Z",
+    "updated": "2026-02-03T20:19:01.505008Z",
+    "startTs": "2026-02-03T20:14:45.430Z",
+    "endTs": "2026-02-03T20:14:52.284Z",
+    "deviceId": "THRN-11C000A7",
+    "userId": "auth0|6542819f4a074c95cf9b873f",
+    "status": "SKIPPED",
+    "metricCount": 0
+  },
+  {
+    "id": "SE-a1ee45a8-d267-4d0b-86d3-9b5e564610b7",
+    "tags": [
+      "not_toilet"
+    ],
+    "created": "2026-02-03T20:13:24.643923Z",
+    "updated": "2026-02-03T20:13:24.787645Z",
+    "startTs": "2026-02-03T20:13:08.852Z",
+    "endTs": "2026-02-03T20:13:17.456Z",
+    "deviceId": "THRN-11C000A7",
+    "userId": "auth0|6542819f4a074c95cf9b873f",
+    "status": "SKIPPED",
+    "metricCount": 0
+  },
+  {
+    "id": "SE-8fc5710c-f1c0-4ff3-8e46-8d6ffa5466bc",
+    "tags": [
+      "pee"
+    ],
+    "created": "2026-02-03T20:00:31.582098Z",
+    "updated": "2026-02-03T20:03:26.521765Z",
+    "startTs": "2026-02-03T19:59:47.891Z",
+    "endTs": "2026-02-03T20:02:17.339Z",
+    "deviceId": "THRN-11C00027",
+    "userId": "auth0|6542819f4a074c95cf9b873f",
+    "status": "DONE",
+    "metricCount": 39
+  },
+  {
+    "id": "SE-5b4b52ff-39a8-40ac-b955-f3a640f40d7e",
+    "tags": [
+      "pee"
+    ],
+    "created": "2026-02-03T17:44:13.401440Z",
+    "updated": "2026-02-03T17:44:49.154290Z",
+    "startTs": "2026-02-03T17:43:27.952Z",
+    "endTs": "2026-02-03T17:44:12.827Z",
+    "deviceId": "THRN-11C00027",
+    "userId": "auth0|6542819f4a074c95cf9b873f",
+    "status": "DONE",
+    "metricCount": 43
+  },
+  {
+    "id": "SE-d26606fa-7931-42a7-84b9-da427f348fdd",
+    "tags": [
+      "pee"
+    ],
+    "created": "2026-02-03T15:51:01.708412Z",
+    "updated": "2026-02-03T15:51:40.271551Z",
+    "startTs": "2026-02-03T15:50:24.015Z",
+    "endTs": "2026-02-03T15:51:02.739Z",
+    "deviceId": "THRN-11C00033",
+    "userId": "auth0|6542819f4a074c95cf9b873f",
+    "status": "DONE",
+    "metricCount": 55
+  },
+  {
+    "id": "SE-af70cfef-ac55-49e5-9d7b-31954ceb5cda",
+    "tags": [
+      "pee"
+    ],
+    "created": "2026-02-03T12:01:46.300048Z",
+    "updated": "2026-02-03T12:02:51.324826Z",
+    "startTs": "2026-02-03T12:01:09.106Z",
+    "endTs": "2026-02-03T12:02:09.746Z",
+    "deviceId": "THRN-11C00033",
+    "userId": "auth0|6542819f4a074c95cf9b873f",
+    "status": "DONE",
+    "metricCount": 43
+  },
+  {
+    "id": "SE-fa6ebdf8-184f-4bda-99da-a6dbe8b05060",
+    "tags": [
+      "pee"
+    ],
+    "created": "2026-02-03T06:47:56.705883Z",
+    "updated": "2026-02-03T06:49:10.549908Z",
+    "startTs": "2026-02-03T06:47:19.116Z",
+    "endTs": "2026-02-03T06:48:23.501Z",
+    "deviceId": "THRN-11A00031",
+    "userId": "auth0|6542819f4a074c95cf9b873f",
+    "status": "DONE",
+    "metricCount": 27
+  },
+  {
+    "id": "SE-cd591933-76ba-457e-85db-15c771a60dcb",
+    "tags": [],
+    "created": "2026-02-03T06:14:08.028349Z",
+    "updated": "2026-02-03T06:14:19.412426Z",
+    "startTs": "2026-02-03T06:13:56.467Z",
+    "endTs": "2026-02-03T06:14:04.072Z",
+    "deviceId": "THRN-11A00031",
+    "userId": "auth0|6542819f4a074c95cf9b873f",
+    "status": "DONE",
+    "metricCount": 0
+  },
+  {
+    "id": "SE-6d073a62-9594-430b-a1b2-da2f0eae44ab",
+    "tags": [
+      "poo",
+      "pee"
+    ],
+    "created": "2026-02-03T03:18:38.422449Z",
+    "updated": "2026-02-03T03:26:40.626053Z",
+    "startTs": "2026-02-03T03:18:00.503Z",
+    "endTs": "2026-02-03T03:23:36.747Z",
+    "deviceId": "THRN-11C00033",
+    "userId": "auth0|6542819f4a074c95cf9b873f",
+    "status": "DONE",
+    "metricCount": 0
+  },
+  {
+    "id": "SE-25e563a2-5e91-4de4-8d83-9ae9de1f7740",
+    "tags": [
+      "pee"
+    ],
+    "created": "2026-02-03T02:52:17.555039Z",
+    "updated": "2026-02-03T02:53:55.344Z",
+    "startTs": "2026-02-03T02:51:39.266Z",
+    "endTs": "2026-02-03T02:52:06.388Z",
+    "deviceId": "THRN-11A00031",
+    "userId": "auth0|6542819f4a074c95cf9b873f",
+    "status": "DONE",
+    "metricCount": 25
+  },
+  {
+    "id": "SE-589d5203-de24-4161-85eb-48b77525b3c1",
+    "tags": [
+      "pee"
+    ],
+    "created": "2026-02-03T01:13:09.041188Z",
+    "updated": "2026-02-03T01:24:31.302880Z",
+    "startTs": "2026-02-03T01:12:30.935Z",
+    "endTs": "2026-02-03T01:20:31.282Z",
+    "deviceId": "THRN-11A00031",
+    "userId": "auth0|6542819f4a074c95cf9b873f",
+    "status": "DONE",
+    "metricCount": 0
+  }
+]

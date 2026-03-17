@@ -1,0 +1,236 @@
+/**
+ * Permission Card
+ *
+ * Card component for requesting individual permissions
+ * with status indicator and action button.
+ */
+
+import React from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  useColorScheme,
+  ActivityIndicator,
+} from 'react-native';
+import { IconSymbol } from '@/components/ui/icon-symbol';
+import { Colors, StanfordColors, Spacing } from '@/constants/theme';
+import { FontSize, FontWeight } from '@/lib/theme/typography';
+
+export type PermissionStatus = 'not_determined' | 'granted' | 'denied' | 'skipped' | 'loading';
+
+interface PermissionCardProps {
+  title: string;
+  description: string;
+  icon: string;
+  status: PermissionStatus;
+  onRequest: () => void;
+  onSkip?: () => void;
+  optional?: boolean;
+  comingSoon?: boolean;
+}
+
+export function PermissionCard({
+  title,
+  description,
+  icon,
+  status,
+  onRequest,
+  onSkip,
+  optional = false,
+  comingSoon = false,
+}: PermissionCardProps) {
+  const colorScheme = useColorScheme();
+  const colors = Colors[colorScheme ?? 'light'];
+
+  const getStatusColor = () => {
+    switch (status) {
+      case 'granted':
+        return '#34C759'; // iOS green
+      case 'denied':
+        return '#FF3B30'; // iOS red
+      case 'skipped':
+        return colors.icon;
+      default:
+        return colors.icon;
+    }
+  };
+
+  const getStatusIcon = (): string => {
+    switch (status) {
+      case 'granted':
+        return 'checkmark.circle.fill';
+      case 'denied':
+        return 'xmark.circle.fill';
+      case 'skipped':
+        return 'minus.circle';
+      default:
+        return 'circle';
+    }
+  };
+
+  const getButtonText = () => {
+    if (comingSoon) return 'Coming Soon';
+    switch (status) {
+      case 'granted':
+        return 'Enabled';
+      case 'denied':
+        return 'Open Settings';
+      case 'skipped':
+        return 'Skipped';
+      case 'loading':
+        return 'Requesting...';
+      default:
+        return 'Enable';
+    }
+  };
+
+  const isDisabled = status === 'granted' || status === 'loading' || comingSoon;
+
+  return (
+    <View
+      style={[
+        styles.card,
+        {
+          backgroundColor: colorScheme === 'dark' ? '#1C1C1E' : '#FFFFFF',
+          borderColor: status === 'granted' ? '#34C759' : colors.border,
+        },
+      ]}
+    >
+      <View style={styles.header}>
+        <View
+          style={[
+            styles.iconContainer,
+            {
+              backgroundColor:
+                status === 'granted'
+                  ? 'rgba(52, 199, 89, 0.1)'
+                  : colorScheme === 'dark'
+                  ? '#2C2C2E'
+                  : '#F2F2F7',
+            },
+          ]}
+        >
+          <IconSymbol
+            name={icon as any}
+            size={28}
+            color={status === 'granted' ? '#34C759' : StanfordColors.cardinal}
+          />
+        </View>
+        <View style={styles.statusContainer}>
+          <IconSymbol
+            name={getStatusIcon() as any}
+            size={20}
+            color={getStatusColor()}
+          />
+        </View>
+      </View>
+
+      <Text style={[styles.title, { color: colors.text }]}>{title}</Text>
+      <Text style={[styles.description, { color: colors.icon }]}>
+        {comingSoon ? 'Throne integration coming soon. You can set this up later.' : description}
+      </Text>
+
+      <View style={styles.actions}>
+        <TouchableOpacity
+          style={[
+            styles.button,
+            {
+              backgroundColor: isDisabled
+                ? colorScheme === 'dark'
+                  ? '#2C2C2E'
+                  : '#F2F2F7'
+                : StanfordColors.cardinal,
+            },
+          ]}
+          onPress={onRequest}
+          disabled={isDisabled}
+        >
+          {status === 'loading' ? (
+            <ActivityIndicator color="#FFFFFF" size="small" />
+          ) : (
+            <Text
+              style={[
+                styles.buttonText,
+                {
+                  color: isDisabled
+                    ? colors.icon
+                    : '#FFFFFF',
+                },
+              ]}
+            >
+              {getButtonText()}
+            </Text>
+          )}
+        </TouchableOpacity>
+
+        {optional && status === 'not_determined' && onSkip && (
+          <TouchableOpacity style={styles.skipButton} onPress={onSkip}>
+            <Text style={[styles.skipText, { color: colors.icon }]}>Skip for now</Text>
+          </TouchableOpacity>
+        )}
+      </View>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  card: {
+    borderRadius: 16,
+    borderWidth: 1,
+    padding: Spacing.md,
+    marginBottom: Spacing.md,
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: Spacing.sm,
+  },
+  iconContainer: {
+    width: 56,
+    height: 56,
+    borderRadius: 14,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  statusContainer: {
+    padding: 4,
+  },
+  title: {
+    fontSize: FontSize.headline,
+    fontWeight: FontWeight.semibold,
+    marginBottom: 4,
+  },
+  description: {
+    fontSize: FontSize.footnote,
+    lineHeight: 20,
+    marginBottom: Spacing.md,
+  },
+  actions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+  },
+  button: {
+    flex: 1,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 44,
+  },
+  buttonText: {
+    fontSize: FontSize.subhead,
+    fontWeight: FontWeight.semibold,
+  },
+  skipButton: {
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+  },
+  skipText: {
+    fontSize: FontSize.footnote,
+  },
+});

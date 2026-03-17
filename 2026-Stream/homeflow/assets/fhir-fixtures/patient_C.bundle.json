@@ -1,0 +1,121 @@
+{
+  "resourceType": "Bundle",
+  "type": "collection",
+  "entry": [
+    {
+      "resource": {
+        "resourceType": "Patient",
+        "id": "HF-SYN-C",
+        "name": [{ "family": "Kim", "given": ["Noah"] }],
+        "gender": "male",
+        "birthDate": "1966-07-05",
+        "extension": [
+          { "url": "http://hl7.org/fhir/us/core/StructureDefinition/us-core-race", "valueString": "unknown/declined" },
+          { "url": "http://hl7.org/fhir/us/core/StructureDefinition/us-core-ethnicity", "valueString": "unknown/declined" }
+        ]
+      }
+    },
+
+    {
+      "resource": {
+        "resourceType": "MedicationRequest",
+        "id": "medreq-c1",
+        "status": "active",
+        "authoredOn": "2024-06-21",
+        "medicationCodeableConcept": {
+          "coding": [{ "system": "http://www.nlm.nih.gov/research/umls/rxnorm", "code": "197379", "display": "finasteride 5 MG Oral Tablet" }],
+          "text": "finasteride 5 mg tablet"
+        }
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "MedicationRequest",
+        "id": "medreq-c2",
+        "status": "active",
+        "authoredOn": "2025-10-02",
+        "medicationCodeableConcept": {
+          "coding": [{ "system": "http://www.nlm.nih.gov/research/umls/rxnorm", "code": "103954", "display": "oxybutynin chloride 5 MG Oral Tablet" }],
+          "text": "oxybutynin 5 mg tablet"
+        }
+      }
+    },
+
+    {
+      "resource": {
+        "resourceType": "Condition",
+        "id": "cond-c1",
+        "clinicalStatus": { "coding": [{ "system": "http://terminology.hl7.org/CodeSystem/condition-clinical", "code": "active" }] },
+        "onsetDateTime": "2021-02-11",
+        "code": {
+          "coding": [
+            { "system": "http://snomed.info/sct", "code": "73211009", "display": "Diabetes mellitus" },
+            { "system": "http://hl7.org/fhir/sid/icd-10-cm", "code": "E11.9", "display": "Type 2 diabetes mellitus without complications" }
+          ],
+          "text": "Type 2 diabetes"
+        }
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Condition",
+        "id": "cond-c2",
+        "clinicalStatus": { "coding": [{ "system": "http://terminology.hl7.org/CodeSystem/condition-clinical", "code": "active" }] },
+        "recordedDate": "2020-11-09",
+        "code": {
+          "coding": [
+            { "system": "http://snomed.info/sct", "code": "16940007", "display": "Benign prostatic hyperplasia" },
+            { "system": "http://hl7.org/fhir/sid/icd-10-cm", "code": "N40.0", "display": "Benign prostatic hyperplasia" }
+          ],
+          "text": "BPH"
+        }
+      }
+    },
+
+    {
+      "resource": {
+        "resourceType": "Observation",
+        "id": "obs-c-a1c",
+        "code": { "coding": [{ "system": "http://loinc.org", "code": "4548-4", "display": "Hemoglobin A1c/Hemoglobin.total in Blood" }] },
+        "effectiveDateTime": "2026-01-08T09:10:00-08:00",
+        "valueQuantity": { "value": 7.8, "unit": "%" },
+        "referenceRange": [{ "text": "4.0-5.6%" }]
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Observation",
+        "id": "obs-c-psa",
+        "code": { "coding": [{ "system": "http://loinc.org", "code": "2857-1", "display": "Prostate specific Ag [Mass/volume] in Serum or Plasma" }] },
+        "effectiveDateTime": "2026-01-08T09:10:00-08:00",
+        "valueQuantity": { "value": 1.1, "unit": "ng/mL" },
+        "referenceRange": [{ "text": "0.0-4.0 ng/mL" }]
+      }
+    },
+
+    {
+      "resource": {
+        "resourceType": "Procedure",
+        "id": "proc-c-urolift",
+        "status": "completed",
+        "performedDateTime": "2023-02-17",
+        "code": {
+          "coding": [{ "system": "http://snomed.info/sct", "code": "703421006", "display": "Prostatic urethral lift (UroLift)" }],
+          "text": "UroLift"
+        }
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Procedure",
+        "id": "proc-c-other",
+        "status": "completed",
+        "performedDateTime": "2018-05-22",
+        "code": {
+          "coding": [{ "system": "http://snomed.info/sct", "code": "80146002", "display": "Appendectomy" }],
+          "text": "Appendectomy"
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,66 @@
+{
+  "resourceType": "Bundle",
+  "type": "collection",
+  "entry": [
+    {
+      "resource": {
+        "resourceType": "Patient",
+        "id": "HF-SYN-B",
+        "name": [{ "family": "Navarro", "given": ["Maya"] }],
+        "gender": "female",
+        "birthDate": "1984-03-29",
+        "extension": [
+          { "url": "http://hl7.org/fhir/us/core/StructureDefinition/us-core-race", "valueString": "unknown/declined" },
+          { "url": "http://hl7.org/fhir/us/core/StructureDefinition/us-core-ethnicity", "valueString": "unknown/declined" }
+        ]
+      }
+    },
+
+    {
+      "resource": {
+        "resourceType": "MedicationStatement",
+        "id": "medstmt-b1",
+        "status": "active",
+        "dateAsserted": "2026-01-30",
+        "medicationCodeableConcept": {
+          "coding": [{ "system": "http://www.nlm.nih.gov/research/umls/rxnorm", "code": "1112970", "display": "mirabegron 25 MG Extended Release Oral Tablet" }],
+          "text": "mirabegron 25 mg ER tablet"
+        }
+      }
+    },
+
+    {
+      "resource": {
+        "resourceType": "Condition",
+        "id": "cond-b1",
+        "clinicalStatus": { "coding": [{ "system": "http://terminology.hl7.org/CodeSystem/condition-clinical", "code": "active" }] },
+        "recordedDate": "2025-09-12",
+        "code": {
+          "coding": [{ "system": "http://snomed.info/sct", "code": "130987000", "display": "Overactive bladder" }],
+          "text": "Overactive bladder"
+        }
+      }
+    },
+
+    {
+      "resource": {
+        "resourceType": "DiagnosticReport",
+        "id": "dr-b-ua",
+        "status": "final",
+        "code": { "coding": [{ "system": "http://loinc.org", "code": "24356-8", "display": "Urinalysis complete panel - Urine" }] },
+        "issued": "2026-02-05T11:20:00-08:00",
+        "conclusion": "UA: nitrite positive, leukocyte esterase positive; WBC 20-40/hpf; RBC 0-2/hpf."
+      }
+    },
+
+    {
+      "resource": {
+        "resourceType": "Observation",
+        "id": "obs-b-psa",
+        "code": { "coding": [{ "system": "http://loinc.org", "code": "2857-1", "display": "Prostate specific Ag [Mass/volume] in Serum or Plasma" }] },
+        "effectiveDateTime": "2026-02-01T08:40:00-08:00",
+        "valueString": "Not performed (patient not eligible / not indicated)."
+      }
+    }
+  ]
+}

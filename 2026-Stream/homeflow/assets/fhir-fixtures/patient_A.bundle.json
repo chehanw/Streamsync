@@ -1,0 +1,142 @@
+{
+  "resourceType": "Bundle",
+  "type": "collection",
+  "entry": [
+    {
+      "resource": {
+        "resourceType": "Patient",
+        "id": "HF-SYN-A",
+        "name": [{ "use": "official", "family": "Rowan", "given": ["Eli"] }],
+        "gender": "male",
+        "birthDate": "1958-10-12",
+        "extension": [
+          { "url": "http://hl7.org/fhir/us/core/StructureDefinition/us-core-race", "valueString": "unknown/declined" },
+          { "url": "http://hl7.org/fhir/us/core/StructureDefinition/us-core-ethnicity", "valueString": "unknown/declined" }
+        ]
+      }
+    },
+
+    {
+      "resource": {
+        "resourceType": "MedicationRequest",
+        "id": "medreq-a1",
+        "status": "active",
+        "authoredOn": "2025-11-08",
+        "medicationCodeableConcept": {
+          "coding": [{ "system": "http://www.nlm.nih.gov/research/umls/rxnorm", "code": "313782", "display": "tamsulosin 0.4 MG Oral Capsule" }],
+          "text": "tamsulosin 0.4 mg capsule"
+        }
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "MedicationRequest",
+        "id": "medreq-a2",
+        "status": "active",
+        "authoredOn": "2020-04-03",
+        "medicationCodeableConcept": {
+          "coding": [{ "system": "http://www.nlm.nih.gov/research/umls/rxnorm", "code": "314076", "display": "lisinopril 10 MG Oral Tablet" }],
+          "text": "lisinopril 10 mg tablet"
+        }
+      }
+    },
+
+    {
+      "resource": {
+        "resourceType": "Condition",
+        "id": "cond-a1",
+        "clinicalStatus": { "coding": [{ "system": "http://terminology.hl7.org/CodeSystem/condition-clinical", "code": "active" }] },
+        "recordedDate": "2022-06-14",
+        "code": {
+          "coding": [
+            { "system": "http://snomed.info/sct", "code": "266569009", "display": "Benign prostatic hyperplasia" },
+            { "system": "http://hl7.org/fhir/sid/icd-10-cm", "code": "N40.1", "display": "Benign prostatic hyperplasia with lower urinary tract symptoms" }
+          ],
+          "text": "BPH with LUTS"
+        }
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Condition",
+        "id": "cond-a2",
+        "clinicalStatus": { "coding": [{ "system": "http://terminology.hl7.org/CodeSystem/condition-clinical", "code": "active" }] },
+        "onsetDateTime": "2012-01-01",
+        "code": {
+          "coding": [
+            { "system": "http://snomed.info/sct", "code": "38341003", "display": "Hypertensive disorder, systemic arterial" },
+            { "system": "http://hl7.org/fhir/sid/icd-10-cm", "code": "I10", "display": "Essential (primary) hypertension" }
+          ],
+          "text": "Hypertension"
+        }
+      }
+    },
+
+    {
+      "resource": {
+        "resourceType": "Observation",
+        "id": "obs-a-psa",
+        "code": {
+          "coding": [{ "system": "http://loinc.org", "code": "2857-1", "display": "Prostate specific Ag [Mass/volume] in Serum or Plasma" }]
+        },
+        "effectiveDateTime": "2026-01-15T10:12:00-08:00",
+        "valueQuantity": { "value": 2.4, "unit": "ng/mL" },
+        "referenceRange": [{ "low": { "value": 0.0, "unit": "ng/mL" }, "high": { "value": 4.0, "unit": "ng/mL" }, "text": "0.0-4.0 ng/mL" }]
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Observation",
+        "id": "obs-a-a1c",
+        "code": { "coding": [{ "system": "http://loinc.org", "code": "4548-4", "display": "Hemoglobin A1c/Hemoglobin.total in Blood" }] },
+        "effectiveDateTime": "2026-01-15T10:12:00-08:00",
+        "valueQuantity": { "value": 5.6, "unit": "%" },
+        "referenceRange": [{ "text": "4.0-5.6%" }]
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "DiagnosticReport",
+        "id": "dr-a-ua",
+        "status": "final",
+        "code": { "coding": [{ "system": "http://loinc.org", "code": "24356-8", "display": "Urinalysis complete panel - Urine" }] },
+        "issued": "2026-01-15T13:40:00-08:00",
+        "conclusion": "UA: negative nitrite, negative leukocyte esterase, RBC 0-2/hpf."
+      }
+    },
+
+    {
+      "resource": {
+        "resourceType": "Observation",
+        "id": "obs-a-pvr",
+        "code": { "coding": [{ "system": "http://loinc.org", "code": "9187-6", "display": "Post void residual urine volume (placeholder)" }], "text": "PVR" },
+        "effectiveDateTime": "2026-01-20T09:05:00-08:00",
+        "valueQuantity": { "value": 140, "unit": "mL" },
+        "referenceRange": [{ "text": "Typically < 50 mL (varies by context)" }]
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Observation",
+        "id": "obs-a-qmax",
+        "code": { "coding": [{ "system": "http://loinc.org", "code": "80963-5", "display": "Urinary flow maximum (Qmax) (placeholder)" }], "text": "Uroflow Qmax" },
+        "effectiveDateTime": "2026-01-20T09:05:00-08:00",
+        "valueQuantity": { "value": 9.6, "unit": "mL/s" },
+        "referenceRange": [{ "text": "Context-dependent" }]
+      }
+    },
+
+    {
+      "resource": {
+        "resourceType": "Procedure",
+        "id": "proc-a-1",
+        "status": "completed",
+        "performedDateTime": "2019-08-10",
+        "code": {
+          "coding": [{ "system": "http://snomed.info/sct", "code": "73761001", "display": "Colonoscopy" }],
+          "text": "Colonoscopy"
+        }
+      }
+    }
+  ]
+}
