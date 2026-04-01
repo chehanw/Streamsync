@@ -48,13 +48,6 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="tracker"
-        options={{
-          title: 'Tracker',
-          tabBarIcon: ({ color }) => <IconSymbol size={26} name="checklist" color={color} />,
-        }}
-      />
-      <Tabs.Screen
         name="chat"
         options={{
           title: 'Chat Helper',

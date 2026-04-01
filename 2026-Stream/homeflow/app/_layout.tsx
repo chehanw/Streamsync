@@ -3,6 +3,12 @@ import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import 'react-native-reanimated';
+
+// Suppress all JS warnings in the dev overlay so the Expo warning toast does not
+// fire macOS UserNotificationCenter alerts that block Simulator interaction.
+// Safe to remove once the app is ready for production.
+import { LogBox as RNLogBox } from 'react-native';
+RNLogBox.ignoreAllLogs();
 // Global CSS for web (theming for alert dialogs, etc.) - only processed on web
 import '@/assets/styles/global.css';
 import { bootstrapHealthKitSync } from '@/src/services/healthkitSync';

@@ -2,7 +2,7 @@
  * Firebase Account Service
  *
  * Implements IAccountService using Firebase Auth.
- * Supports email/password, Apple Sign-In, and Google Sign-In.
+ * Supports email/password and Google Sign-In.
  */
 
 import {
@@ -12,16 +12,17 @@ import {
   onAuthStateChanged as firebaseOnAuthStateChanged,
   updateProfile,
   sendPasswordResetEmail as firebaseSendPasswordResetEmail,
-  OAuthProvider,
   signInWithCredential,
   GoogleAuthProvider,
   type User as FirebaseUser,
 } from 'firebase/auth';
-import * as AppleAuthentication from 'expo-apple-authentication';
-import * as Crypto from 'expo-crypto';
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
 import { auth } from '../firebase';
 import type { IAccountService, UserProfile } from './account-service';
+import { saveUserProfile } from '@/src/services/throneFirestore';
+
+const DEFAULT_GOOGLE_IOS_CLIENT_ID =
+  '295202330543-6rlqahqi4ncgb5i0tksk3b46omhfin9e.apps.googleusercontent.com';
 
 function mapFirebaseUser(user: FirebaseUser): UserProfile {
   const nameParts = (user.displayName || '').split(' ');
@@ -35,14 +36,38 @@ function mapFirebaseUser(user: FirebaseUser): UserProfile {
   };
 }
 
+async function syncRootUserProfile(user: FirebaseUser): Promise<void> {
+  const displayName = user.displayName || '';
+  const nameParts = displayName.trim().split(/\s+/).filter(Boolean);
+
+  await saveUserProfile(user.uid, {
+    name: displayName || undefined,
+    displayName: displayName || undefined,
+    firstName: nameParts[0],
+    lastName: nameParts.slice(1).join(' ') || undefined,
+    email: user.email || undefined,
+    createdAt: user.metadata.creationTime || undefined,
+  });
+}
+
+async function syncRootUserProfileSafely(user: FirebaseUser): Promise<void> {
+  try {
+    await syncRootUserProfile(user);
+  } catch (error) {
+    console.warn('Non-fatal root profile sync failure after auth:', error);
+  }
+}
+
 export class FirebaseAccountService implements IAccountService {
   constructor() {
-    // Configure Google Sign-In if client IDs are available
-    const webClientId = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID;
-    const iosClientId = process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID;
-    if (webClientId) {
-      GoogleSignin.configure({ webClientId, iosClientId });
-    }
+    const webClientId = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID?.trim();
+    const iosClientId =
+      process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID?.trim() || DEFAULT_GOOGLE_IOS_CLIENT_ID;
+
+    GoogleSignin.configure({
+      iosClientId,
+      ...(webClientId ? { webClientId } : {}),
+    });
   }
 
   async isAuthenticated(): Promise<boolean> {
@@ -65,6 +90,7 @@ export class FirebaseAccountService implements IAccountService {
     await updateProfile(user, {
       displayName: `${profile.firstName} ${profile.lastName}`,
     });
+    await syncRootUserProfileSafely(user);
     return mapFirebaseUser(user);
   }
 
@@ -82,6 +108,7 @@ export class FirebaseAccountService implements IAccountService {
       await updateProfile(user, { displayName });
     }
 
+    await syncRootUserProfileSafely(user);
     return mapFirebaseUser(user);
   }
 
@@ -93,8 +120,14 @@ export class FirebaseAccountService implements IAccountService {
   }
 
   async signInWithEmail(email: string, password: string): Promise<UserProfile> {
-    const result = await signInWithEmailAndPassword(auth, email, password);
-    return mapFirebaseUser(result.user);
+    try {
+      const result = await signInWithEmailAndPassword(auth, email, password);
+      await syncRootUserProfileSafely(result.user);
+      return mapFirebaseUser(result.user);
+    } catch (error) {
+      console.error('Firebase email sign-in failed:', error);
+      throw error;
+    }
   }
 
   async signUpWithEmail(
@@ -102,59 +135,48 @@ export class FirebaseAccountService implements IAccountService {
     password: string,
     profile: { firstName: string; lastName: string }
   ): Promise<UserProfile> {
-    const result = await createUserWithEmailAndPassword(auth, email, password);
-    await updateProfile(result.user, {
-      displayName: `${profile.firstName} ${profile.lastName}`,
-    });
-    return mapFirebaseUser(result.user);
+    try {
+      const result = await createUserWithEmailAndPassword(auth, email, password);
+      await updateProfile(result.user, {
+        displayName: `${profile.firstName} ${profile.lastName}`,
+      });
+      await syncRootUserProfileSafely(result.user);
+      return mapFirebaseUser(result.user);
+    } catch (error) {
+      console.error('Firebase email sign-up failed:', error);
+      throw error;
+    }
   }
 
   async signInWithApple(): Promise<UserProfile> {
-    // Generate nonce for security
-    const randomBytes = await Crypto.getRandomBytesAsync(32);
-    const nonce = Array.from(randomBytes).map(b => b.toString(16).padStart(2, '0')).join('');
-    const hashedNonce = await Crypto.digestStringAsync(
-      Crypto.CryptoDigestAlgorithm.SHA256,
-      nonce
-    );
-
-    const appleCredential = await AppleAuthentication.signInAsync({
-      requestedScopes: [
-        AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
-        AppleAuthentication.AppleAuthenticationScope.EMAIL,
-      ],
-      nonce: hashedNonce,
-    });
-
-    const oauthCredential = new OAuthProvider('apple.com').credential({
-      idToken: appleCredential.identityToken!,
-      rawNonce: nonce,
-    });
-
-    const result = await signInWithCredential(auth, oauthCredential);
-
-    // Apple only provides name on first sign-in, so set displayName if available
-    if (appleCredential.fullName?.givenName && !result.user.displayName) {
-      const name = [appleCredential.fullName.givenName, appleCredential.fullName.familyName]
-        .filter(Boolean)
-        .join(' ');
-      await updateProfile(result.user, { displayName: name });
-    }
-
-    return mapFirebaseUser(result.user);
+    throw new Error('Apple Sign-In is currently disabled for this build.');
   }
 
   async signInWithGoogle(): Promise<UserProfile> {
     await GoogleSignin.hasPlayServices();
     const signInResult = await GoogleSignin.signIn();
-    const idToken = signInResult.data?.idToken;
+
+    if (signInResult.type === 'cancelled') {
+      const cancelError = new Error('Google Sign-In was cancelled.');
+      (cancelError as Error & { code?: string }).code = 'SIGN_IN_CANCELLED';
+      throw cancelError;
+    }
+
+    let idToken = signInResult.data.idToken;
+    if (!idToken) {
+      const tokenResult = await GoogleSignin.getTokens();
+      idToken = tokenResult.idToken;
+    }
 
     if (!idToken) {
-      throw new Error('Google Sign-In failed: no ID token received');
+      throw new Error(
+        'Google Sign-In did not return an ID token. Check the iOS client ID and Firebase Google provider configuration.'
+      );
     }
 
     const googleCredential = GoogleAuthProvider.credential(idToken);
     const result = await signInWithCredential(auth, googleCredential);
+    await syncRootUserProfileSafely(result.user);
     return mapFirebaseUser(result.user);
   }
 

@@ -114,6 +114,13 @@ export interface VitalsDay {
 
 export interface HealthPermissionResult {
   success: boolean;
+  /**
+   * True if a test query confirmed HealthKit is actually returning data.
+   * False means either permissions were denied or the user has no recorded
+   * data for the query window (ambiguous — cannot distinguish via HealthKit API).
+   * Undefined when success is false (permissions could not be requested).
+   */
+  dataVerified?: boolean;
   /** HealthKit always returns "not determined" for read permissions (privacy). */
   note: string;
 }

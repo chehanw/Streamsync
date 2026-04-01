@@ -20,6 +20,11 @@ import * as admin from "firebase-admin";
 import * as crypto from "crypto";
 import * as logger from "firebase-functions/logger";
 import {runThroneIngestion, ThroneConfig} from "./throneIngestion";
+export {
+  smartAuthorizeUrl,
+  completeSmartConnection,
+  syncSmartClinicalData,
+} from "./smartOnFhir";
 
 admin.initializeApp();
 

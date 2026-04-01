@@ -12,28 +12,21 @@ import {
   isClinicalRecordsAvailable,
   requestClinicalRecordsAuthorization,
   getClinicalRecords,
+  getClinicalDocumentSamples,
   ClinicalRecordType,
 } from '@/modules/expo-clinical-records/src';
 import type {
   ClinicalRecord,
+  ClinicalDocumentSample,
   ClinicalRecordsAuthResult,
+  ClinicalNoteAccessProbeResult,
 } from '@/modules/expo-clinical-records/src';
 import type { DateRange, HealthPermissionResult } from './types';
 
-// ── Public API ──────────────────────────────────────────────────────
-
-/**
- * Check if clinical records (FHIR) are available on this device.
- * Returns false on non-iOS, simulators, or devices without Health Records support.
- */
 export function areClinicalRecordsAvailable(): boolean {
   return isClinicalRecordsAvailable();
 }
 
-/**
- * Request permission to read clinical records.
- * Prompts the standard HealthKit authorization sheet for clinical data.
- */
 export async function requestClinicalPermissions(): Promise<HealthPermissionResult> {
   const result: ClinicalRecordsAuthResult = await requestClinicalRecordsAuthorization();
   return {
@@ -42,9 +35,6 @@ export async function requestClinicalPermissions(): Promise<HealthPermissionResu
   };
 }
 
-/**
- * Get medication records from Apple Health.
- */
 export async function getClinicalMedications(
   range?: DateRange,
 ): Promise<ClinicalRecord[]> {
@@ -54,9 +44,6 @@ export async function getClinicalMedications(
   );
 }
 
-/**
- * Get lab result records from Apple Health.
- */
 export async function getClinicalLabResults(
   range?: DateRange,
 ): Promise<ClinicalRecord[]> {
@@ -66,9 +53,6 @@ export async function getClinicalLabResults(
   );
 }
 
-/**
- * Get condition records from Apple Health.
- */
 export async function getClinicalConditions(
   range?: DateRange,
 ): Promise<ClinicalRecord[]> {
@@ -78,9 +62,6 @@ export async function getClinicalConditions(
   );
 }
 
-/**
- * Get procedure records from Apple Health.
- */
 export async function getClinicalProcedures(
   range?: DateRange,
 ): Promise<ClinicalRecord[]> {
@@ -90,11 +71,6 @@ export async function getClinicalProcedures(
   );
 }
 
-/**
- * Get clinical note documents from Apple Health.
- * Notes are FHIR DocumentReference resources; the document itself
- * (typically a PDF) is base64-encoded in fhirResource.content[].attachment.data.
- */
 export async function getClinicalNotes(
   range?: DateRange,
 ): Promise<ClinicalRecord[]> {
@@ -104,10 +80,58 @@ export async function getClinicalNotes(
   );
 }
 
-/**
- * Fetch all supported clinical record types at once.
- * Runs queries in parallel for efficiency.
- */
+export async function getHealthKitDocumentSamples(
+  range?: DateRange,
+): Promise<ClinicalDocumentSample[]> {
+  return getClinicalDocumentSamples(buildOptions(range));
+}
+
+export async function probeClinicalNoteAccess(
+  range?: DateRange,
+): Promise<ClinicalNoteAccessProbeResult> {
+  const [notes, documentSamples] = await Promise.all([
+    getClinicalNotes(range),
+    getHealthKitDocumentSamples(range),
+  ]);
+
+  let notesWithInlineAttachmentData = 0;
+  let notesWithAttachmentUrlOnly = 0;
+  let notesWithoutAttachment = 0;
+
+  for (const note of notes) {
+    const content = note.fhirResource?.content as
+      | { attachment?: Record<string, unknown> }[]
+      | undefined;
+    const attachment = Array.isArray(content) ? content[0]?.attachment : undefined;
+    const inlineData = attachment?.data;
+    const attachmentUrl = attachment?.url;
+
+    if (typeof inlineData === 'string' && inlineData.length > 0) {
+      notesWithInlineAttachmentData++;
+    } else if (typeof attachmentUrl === 'string' && attachmentUrl.length > 0) {
+      notesWithAttachmentUrlOnly++;
+    } else {
+      notesWithoutAttachment++;
+    }
+  }
+
+  let documentSamplesWithData = 0;
+  for (const sample of documentSamples) {
+    if (typeof sample.documentData === 'string' && sample.documentData.length > 0) {
+      documentSamplesWithData++;
+    }
+  }
+
+  return {
+    clinicalNoteCount: notes.length,
+    notesWithInlineAttachmentData,
+    notesWithAttachmentUrlOnly,
+    notesWithoutAttachment,
+    documentSampleCount: documentSamples.length,
+    documentSamplesWithData,
+  };
+}
+
 export async function getAllClinicalRecords(range?: DateRange): Promise<{
   medications: ClinicalRecord[];
   labResults: ClinicalRecord[];
@@ -123,8 +147,6 @@ export async function getAllClinicalRecords(range?: DateRange): Promise<{
 
   return { medications, labResults, conditions, procedures };
 }
-
-// ── Helpers ─────────────────────────────────────────────────────────
 
 function buildOptions(range?: DateRange) {
   if (!range) return undefined;

@@ -1,11 +1,12 @@
 /**
  * Medical History Screen
  *
- * Displays health records pulled from Apple Health and asks the patient
+ * Displays medical history pulled from connected SMART health systems plus Apple Health demographics
+ * and asks the patient
  * to confirm their information section by section.
  *
  * Flow:
- *   1. Loading: fetch clinical records + HealthKit demographics in parallel
+ *   1. Loading: fetch SMART clinical records + HealthKit demographics in parallel
  *      (falls back to mock data in dev mode if no records are connected)
  *   2. Reviewing: 3-step confirmation UI
  *      Step 0 — Demographics (age, sex)
@@ -32,19 +33,23 @@ import { useRouter, Href } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors, StanfordColors, Spacing } from '@/constants/theme';
 import { OnboardingStep } from '@/lib/constants';
-import { OnboardingService } from '@/lib/services/onboarding-service';
+import { OnboardingService, type OnboardingData } from '@/lib/services/onboarding-service';
 import { OnboardingProgressBar, ContinueButton } from '@/components/onboarding';
 import { IconSymbol } from '@/components/ui/icon-symbol';
-import { getAllClinicalRecords } from '@/lib/services/healthkit';
 import { getDemographics } from '@/lib/services/healthkit/HealthKitClient';
 import {
   buildMedicalHistoryPrefill,
+  type ClinicalRecordsInput,
+  type HealthKitDemographics,
   type MedicalHistoryPrefill,
-  type LabValue,
 } from '@/lib/services/fhir';
 import { BPH_DRUGS } from '@/lib/services/fhir/codes';
-import { getMockClinicalRecords, getMockDemographics } from '@/lib/services/healthkit/mock-health-data';
-import { saveMedicalHistory } from '@/src/services/throneFirestore';
+import {
+  saveConfirmedDemographicsPrefill,
+  saveMedicalHistory,
+  saveUserProfile,
+} from '@/src/services/throneFirestore';
+import { syncSmartClinicalData } from '@/lib/services/smart/client';
 import { getAuth } from '@/src/services/firestore';
 import { syncFhirPrefill } from '@/src/services/fhirPrefillSync';
 import { ConsentService } from '@/lib/services/consent-service';
@@ -170,6 +175,16 @@ type EditableCondItem = {
   name: string;
 };
 
+type EditableValueItem = {
+  id: string;
+  label: string;
+  value: string;
+  description: string;
+  unit?: string;
+  date?: string;
+  referenceRange?: string;
+};
+
 // ── Helpers ──────────────────────────────────────────────────────────
 
 function formatShortDate(dateStr: string | undefined): string {
@@ -187,6 +202,51 @@ function capitalize(str: string): string {
   return str.charAt(0).toUpperCase() + str.slice(1);
 }
 
+function mergeClinicalInputs(
+  primary: ClinicalRecordsInput,
+  secondary: ClinicalRecordsInput | null,
+): ClinicalRecordsInput {
+  if (!secondary) return primary;
+
+  const mergeGroup = (
+    first: Array<{ displayName: string; fhirResource?: Record<string, unknown> }>,
+    second: Array<{ displayName: string; fhirResource?: Record<string, unknown> }>,
+  ) => {
+    const seen = new Set<string>();
+    const merged: Array<{ displayName: string; fhirResource?: Record<string, unknown> }> = [];
+
+    for (const record of [...first, ...second]) {
+      const resourceId = typeof record.fhirResource?.id === 'string' ? record.fhirResource.id : '';
+      const key = `${resourceId}|${record.displayName}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      merged.push(record);
+    }
+
+    return merged;
+  };
+
+  return {
+    medications: mergeGroup(primary.medications, secondary.medications),
+    labResults: mergeGroup(primary.labResults, secondary.labResults),
+    conditions: mergeGroup(primary.conditions, secondary.conditions),
+    procedures: mergeGroup(primary.procedures, secondary.procedures),
+  };
+}
+
+function mergeDemographics(
+  primary: { age: number | null; dateOfBirth: string | null; biologicalSex: string | null },
+  secondary: { age: number | null; dateOfBirth: string | null; biologicalSex: string | null } | null,
+) {
+  if (!secondary) return primary;
+
+  return {
+    age: primary.age ?? secondary.age,
+    dateOfBirth: primary.dateOfBirth ?? secondary.dateOfBirth,
+    biologicalSex: primary.biologicalSex ?? secondary.biologicalSex,
+  };
+}
+
 // ── Shared sub-components (module-level to prevent remount on re-render) ──────
 //
 // IMPORTANT: These must live outside MedicalHistoryScreen. Defining components
@@ -202,6 +262,7 @@ function DataRow({
   placeholder = 'will ask',
   showBadge = true,
   onPress,
+  actions,
   colors,
   borderColor,
 }: {
@@ -211,6 +272,7 @@ function DataRow({
   placeholder?: string;
   showBadge?: boolean;
   onPress?: () => void;
+  actions?: React.ReactNode;
   colors: RowColors;
   borderColor: string;
 }) {
@@ -232,6 +294,7 @@ function DataRow({
             {placeholder}
           </Text>
         )}
+        {actions}
       </View>
     </>
   );
@@ -264,6 +327,7 @@ function InlineInputRow({
   autoFocus: af = true,
   placeholder = 'Type here…',
   autoCapitalize = 'words',
+  actions,
   colors,
   borderColor,
 }: {
@@ -271,10 +335,11 @@ function InlineInputRow({
   value: string;
   onChange: (v: string) => void;
   onSubmit: () => void;
-  keyboardType?: 'default' | 'numeric' | 'number-pad';
+  keyboardType?: 'default' | 'numeric' | 'number-pad' | 'email-address' | 'phone-pad';
   autoFocus?: boolean;
   placeholder?: string;
   autoCapitalize?: 'none' | 'sentences' | 'words' | 'characters';
+  actions?: React.ReactNode;
   colors: RowColors;
   borderColor: string;
 }) {
@@ -294,6 +359,7 @@ function InlineInputRow({
         autoCapitalize={autoCapitalize}
         autoCorrect={false}
       />
+      {actions}
     </View>
   );
 }
@@ -301,11 +367,13 @@ function InlineInputRow({
 function SelectDataRow({
   label,
   onPress,
+  actions,
   colors,
   borderColor,
 }: {
   label: string;
   onPress: () => void;
+  actions?: React.ReactNode;
   colors: RowColors;
   borderColor: string;
 }) {
@@ -320,9 +388,72 @@ function SelectDataRow({
         <Text style={[reviewStyles.selectHint, { color: StanfordColors.cardinal }]}>
           Tap to select
         </Text>
+        {actions}
         <IconSymbol name="chevron.right" size={13} color={StanfordColors.cardinal} />
       </View>
     </TouchableOpacity>
+  );
+}
+
+function RowActionIcons({
+  checked = false,
+  rejected = false,
+  onEdit,
+  onConfirm,
+  onReject,
+  showEdit = true,
+}: {
+  checked?: boolean;
+  rejected?: boolean;
+  onEdit?: () => void;
+  onConfirm?: () => void;
+  onReject?: () => void;
+  showEdit?: boolean;
+}) {
+  return (
+    <View style={reviewStyles.rowActions}>
+      {showEdit && onEdit ? (
+        <TouchableOpacity
+          style={reviewStyles.actionButton}
+          onPress={onEdit}
+          activeOpacity={0.7}
+        >
+          <IconSymbol name="pencil" size={18} color={StanfordColors.cardinal} />
+        </TouchableOpacity>
+      ) : null}
+      {onConfirm ? (
+        <TouchableOpacity
+          style={[
+            reviewStyles.actionButton,
+            checked ? reviewStyles.actionButtonConfirmed : null,
+          ]}
+          onPress={onConfirm}
+          activeOpacity={0.7}
+        >
+          <IconSymbol
+            name={(checked ? 'checkmark.circle.fill' : 'circle') as any}
+            size={20}
+            color={checked ? '#34C759' : StanfordColors.cardinal}
+          />
+        </TouchableOpacity>
+      ) : null}
+      {onReject ? (
+        <TouchableOpacity
+          style={[
+            reviewStyles.actionButton,
+            rejected ? reviewStyles.actionButtonRejected : null,
+          ]}
+          onPress={onReject}
+          activeOpacity={0.7}
+        >
+          <IconSymbol
+            name={(rejected ? 'xmark.circle.fill' : 'xmark.circle') as any}
+            size={20}
+            color={rejected ? '#D93025' : StanfordColors.cardinal}
+          />
+        </TouchableOpacity>
+      ) : null}
+    </View>
   );
 }
 
@@ -336,15 +467,17 @@ export default function MedicalHistoryScreen() {
 
   const [phase, setPhase] = useState<MedicalHistoryPhase>('loading');
   const [reviewStep, setReviewStep] = useState(0);
-  const [correctionsNeeded, setCorrectionsNeeded] = useState<Set<number>>(new Set());
   const [prefillData, setPrefillData] = useState<MedicalHistoryPrefill | null>(null);
+  const [providerConnection, setProviderConnection] = useState<OnboardingData['providerConnection'] | null>(null);
 
   // Demographics sequential input state
   const [demoName, setDemoName] = useState('');
+  const [demoPhone, setDemoPhone] = useState('');
   const [demoAge, setDemoAge] = useState('');
   const [demoBiologicalSex, setDemoBiologicalSex] = useState('');
   const [demoEthnicity, setDemoEthnicity] = useState('');
   const [demoRace, setDemoRace] = useState('');
+  const [demoNamePrefilled, setDemoNamePrefilled] = useState(false);
   const [demoStage, setDemoStage] = useState<DemoStage>('name');
   const [demoEditingField, setDemoEditingField] = useState<'name' | null>(null);
   const [pickerVisible, setPickerVisible] = useState(false);
@@ -360,36 +493,63 @@ export default function MedicalHistoryScreen() {
   const [editingProcValue, setEditingProcValue] = useState('');
 
   const [otherConds, setOtherConds] = useState<EditableCondItem[]>([]);
+  const [editableHealthConds, setEditableHealthConds] = useState<EditableCondItem[]>([]);
+  const [editableLabs, setEditableLabs] = useState<EditableValueItem[]>([]);
+  const [editableMeasurements, setEditableMeasurements] = useState<EditableValueItem[]>([]);
   const [editingCondId, setEditingCondId] = useState<string | null>(null);
   const [editingCondValue, setEditingCondValue] = useState('');
+  const [editingValueId, setEditingValueId] = useState<string | null>(null);
+  const [editingValueText, setEditingValueText] = useState('');
+
+  const [confirmedDemoFields, setConfirmedDemoFields] = useState<Set<string>>(new Set());
+  const [confirmedMedIds, setConfirmedMedIds] = useState<Set<string>>(new Set());
+  const [rejectedMedIds, setRejectedMedIds] = useState<Set<string>>(new Set());
+  const [confirmedProcIds, setConfirmedProcIds] = useState<Set<string>>(new Set());
+  const [rejectedProcIds, setRejectedProcIds] = useState<Set<string>>(new Set());
+  const [confirmedCondIds, setConfirmedCondIds] = useState<Set<string>>(new Set());
+  const [rejectedCondIds, setRejectedCondIds] = useState<Set<string>>(new Set());
+  const [confirmedLabIds, setConfirmedLabIds] = useState<Set<string>>(new Set());
+  const [rejectedLabIds, setRejectedLabIds] = useState<Set<string>>(new Set());
+  const [confirmedMeasurementIds, setConfirmedMeasurementIds] = useState<Set<string>>(new Set());
+  const [rejectedMeasurementIds, setRejectedMeasurementIds] = useState<Set<string>>(new Set());
 
   const stepFade = useRef(new Animated.Value(1)).current;
   const confirmFade = useRef(new Animated.Value(0)).current;
   // Tracks last-tap timestamps per field for double-tap detection
   const lastTapTimes = useRef<Record<string, number>>({});
+  const ageIsAutoPopulated = prefillData?.demographics.age.confidence !== 'none'
+    && prefillData?.demographics.age.value != null;
+  const biologicalSexIsAutoPopulated = prefillData?.demographics.biologicalSex.confidence !== 'none'
+    && !!prefillData?.demographics.biologicalSex.value;
+  const fullNameIsAutoPopulated = demoNamePrefilled && !!demoName.trim();
 
   // ── Load clinical records ─────────────────────────────────────────
 
-  const loadPrefillData = useCallback(async (forceMock = false) => {
+  const loadPrefillData = useCallback(async () => {
     setPhase('loading');
 
     try {
       let clinicalRecords = null;
       let demographics = { age: null, dateOfBirth: null, biologicalSex: null };
 
-      if (forceMock) {
-        clinicalRecords = getMockClinicalRecords();
-        demographics = getMockDemographics();
-      } else {
-        [clinicalRecords, demographics] = await Promise.all([
-          getAllClinicalRecords().catch(() => null),
-          getDemographics().catch(() => ({ age: null, dateOfBirth: null, biologicalSex: null })),
-        ]);
+      const [healthKitDemographics, onboardingData] = await Promise.all([
+        getDemographics().catch(() => ({ age: null, dateOfBirth: null, biologicalSex: null })),
+        OnboardingService.getData(),
+      ]);
 
-        // In dev mode, use mock data when no real records are available
-        if (__DEV__ && !clinicalRecords?.medications?.length && !clinicalRecords?.conditions?.length) {
-          clinicalRecords = getMockClinicalRecords();
-          demographics = getMockDemographics();
+      demographics = healthKitDemographics;
+
+      const providerId = onboardingData.providerConnection?.providerId;
+      setProviderConnection(onboardingData.providerConnection ?? null);
+      if (providerId) {
+        try {
+          const providerSync = await syncSmartClinicalData(providerId);
+          clinicalRecords = clinicalRecords
+            ? mergeClinicalInputs(clinicalRecords, providerSync.clinicalRecords)
+            : providerSync.clinicalRecords;
+          demographics = mergeDemographics(demographics, providerSync.demographics);
+        } catch (error) {
+          console.warn('[MedicalHistory] SMART sync skipped:', error);
         }
       }
 
@@ -432,15 +592,99 @@ export default function MedicalHistoryScreen() {
       setEditingProcValue('');
 
       setOtherConds([]);
+      const conditionItems: EditableCondItem[] = [
+        ...(prefill.conditions.diabetes.value ?? []),
+        ...(prefill.conditions.hypertension.value ?? []),
+        ...(prefill.conditions.bph.value ?? []),
+        ...(prefill.conditions.other.value ?? []),
+      ].map((cond, index) => ({
+        id: `cond_${index}`,
+        name: cond.name,
+      }));
+      setEditableHealthConds(conditionItems);
       setEditingCondId(null);
       setEditingCondValue('');
 
+      setEditableLabs([
+        {
+          id: 'lab_psa',
+          label: 'PSA',
+          description: 'Prostate-Specific Antigen',
+          value: prefill.labs.psa.value?.value != null ? String(prefill.labs.psa.value.value) : '',
+          unit: prefill.labs.psa.value?.unit,
+          date: prefill.labs.psa.value?.date,
+          referenceRange: prefill.labs.psa.value?.referenceRange,
+        },
+        {
+          id: 'lab_hba1c',
+          label: 'HbA1c',
+          description: 'Hemoglobin A1c (blood sugar)',
+          value: prefill.labs.hba1c.value?.value != null ? String(prefill.labs.hba1c.value.value) : '',
+          unit: prefill.labs.hba1c.value?.unit,
+          date: prefill.labs.hba1c.value?.date,
+          referenceRange: prefill.labs.hba1c.value?.referenceRange,
+        },
+        {
+          id: 'lab_urinalysis',
+          label: 'Urinalysis',
+          description: 'Urine test panel',
+          value: prefill.labs.urinalysis.value?.value != null ? String(prefill.labs.urinalysis.value.value) : '',
+          unit: prefill.labs.urinalysis.value?.unit,
+          date: prefill.labs.urinalysis.value?.date,
+          referenceRange: prefill.labs.urinalysis.value?.referenceRange,
+        },
+      ]);
+
+      setEditableMeasurements([
+        {
+          id: 'measurement_pvr',
+          label: 'PVR',
+          description: 'Post-Void Residual volume',
+          value: prefill.clinicalMeasurements.pvr.value?.value != null ? String(prefill.clinicalMeasurements.pvr.value.value) : '',
+          unit: prefill.clinicalMeasurements.pvr.value?.unit,
+          date: prefill.clinicalMeasurements.pvr.value?.date,
+          referenceRange: prefill.clinicalMeasurements.pvr.value?.referenceRange,
+        },
+        {
+          id: 'measurement_uroflowQmax',
+          label: 'Uroflow Qmax',
+          description: 'Maximum urinary flow rate',
+          value: prefill.clinicalMeasurements.uroflowQmax.value?.value != null ? String(prefill.clinicalMeasurements.uroflowQmax.value.value) : '',
+          unit: prefill.clinicalMeasurements.uroflowQmax.value?.unit,
+          date: prefill.clinicalMeasurements.uroflowQmax.value?.date,
+          referenceRange: prefill.clinicalMeasurements.uroflowQmax.value?.referenceRange,
+        },
+        {
+          id: 'measurement_volumeVoided',
+          label: 'Volume Voided',
+          description: 'Urine volume per void (mL)',
+          value: prefill.clinicalMeasurements.volumeVoided.value?.value != null ? String(prefill.clinicalMeasurements.volumeVoided.value.value) : '',
+          unit: prefill.clinicalMeasurements.volumeVoided.value?.unit,
+          date: prefill.clinicalMeasurements.volumeVoided.value?.date,
+          referenceRange: prefill.clinicalMeasurements.volumeVoided.value?.referenceRange,
+        },
+      ]);
+      setEditingValueId(null);
+      setEditingValueText('');
+
       setReviewStep(0);
-      setCorrectionsNeeded(new Set());
+      setConfirmedDemoFields(new Set());
+      setConfirmedMedIds(new Set());
+      setRejectedMedIds(new Set());
+      setConfirmedProcIds(new Set());
+      setRejectedProcIds(new Set());
+      setConfirmedCondIds(new Set());
+      setRejectedCondIds(new Set());
+      setConfirmedLabIds(new Set());
+      setRejectedLabIds(new Set());
+      setConfirmedMeasurementIds(new Set());
+      setRejectedMeasurementIds(new Set());
+      setDemoPhone('');
       setDemoAge('');
       setDemoBiologicalSex('');
       setDemoEthnicity('');
       setDemoRace('');
+      setDemoNamePrefilled(false);
       setDemoEditingField(null);
 
       // Pre-fill name from consent signature — must happen after all resets
@@ -449,9 +693,11 @@ export default function MedicalHistoryScreen() {
       const consentName = consentRecord?.participantSignature;
       if (consentName && consentName !== '[Drawn signature provided]') {
         setDemoName(consentName);
+        setDemoNamePrefilled(true);
         setDemoStage('ethnicity');
       } else {
         setDemoName('');
+        setDemoNamePrefilled(false);
         setDemoStage('name');
       }
 
@@ -464,41 +710,6 @@ export default function MedicalHistoryScreen() {
   useEffect(() => {
     loadPrefillData();
   }, [loadPrefillData]);
-
-  // ── Review step navigation ────────────────────────────────────────
-
-  const handleConfirmStep = useCallback((withCorrection = false) => {
-    const updatedCorrections = withCorrection
-      ? new Set([...correctionsNeeded, reviewStep])
-      : correctionsNeeded;
-
-    Animated.timing(stepFade, {
-      toValue: 0,
-      duration: 120,
-      useNativeDriver: true,
-    }).start(() => {
-      if (withCorrection) setCorrectionsNeeded(updatedCorrections);
-
-      if (reviewStep < 5) {
-        setReviewStep(prev => prev + 1);
-      } else {
-        // All sections reviewed — go directly to complete
-        setPhase('complete');
-        Animated.spring(confirmFade, {
-          toValue: 1,
-          useNativeDriver: true,
-          tension: 50,
-          friction: 8,
-        }).start();
-      }
-
-      Animated.timing(stepFade, {
-        toValue: 1,
-        duration: 200,
-        useNativeDriver: true,
-      }).start();
-    });
-  }, [correctionsNeeded, reviewStep, stepFade, confirmFade]);
 
   // ── Picker handler ────────────────────────────────────────────────
 
@@ -532,49 +743,263 @@ export default function MedicalHistoryScreen() {
     }
   }, []);
 
+  const updateConfirmedSet = useCallback((
+    setter: React.Dispatch<React.SetStateAction<Set<string>>>,
+    key: string,
+  ) => {
+    setter(prev => {
+      const next = new Set(prev);
+      if (next.has(key)) {
+        next.delete(key);
+      } else {
+        next.add(key);
+      }
+      return next;
+    });
+  }, []);
+
+  const setResolutionState = useCallback((
+    key: string,
+    confirmedSetter: React.Dispatch<React.SetStateAction<Set<string>>>,
+    rejectedSetter: React.Dispatch<React.SetStateAction<Set<string>>>,
+    resolution: 'confirmed' | 'rejected',
+  ) => {
+    confirmedSetter(prev => {
+      const next = new Set(prev);
+      if (resolution === 'confirmed') {
+        if (next.has(key)) {
+          next.delete(key);
+        } else {
+          next.add(key);
+        }
+      } else {
+        next.delete(key);
+      }
+      return next;
+    });
+
+    rejectedSetter(prev => {
+      const next = new Set(prev);
+      if (resolution === 'rejected') {
+        if (next.has(key)) {
+          next.delete(key);
+        } else {
+          next.add(key);
+        }
+      } else {
+        next.delete(key);
+      }
+      return next;
+    });
+  }, []);
+
+  const buildConfirmedConditions = useCallback(() => {
+    return [
+      ...editableHealthConds.filter(cond => confirmedCondIds.has(cond.id)),
+      ...otherConds.filter(cond => confirmedCondIds.has(cond.id)),
+    ]
+      .map(cond => cond.name.trim())
+      .filter(Boolean);
+  }, [editableHealthConds, otherConds, confirmedCondIds]);
+
+  const buildConfirmedMedicalHistoryPayload = useCallback(() => {
+    if (!prefillData) return null;
+
+    const labById = Object.fromEntries(editableLabs.map(item => [item.id, item]));
+    const measurementById = Object.fromEntries(editableMeasurements.map(item => [item.id, item]));
+
+    const parseValueEntry = (item: EditableValueItem | undefined) => {
+      if (!item || !item.value.trim()) return null;
+      const parsed = Number(item.value);
+      if (Number.isNaN(parsed)) return null;
+      return {
+        value: parsed,
+        unit: item.unit ?? '',
+        date: item.date ?? '',
+        referenceRange: item.referenceRange,
+      };
+    };
+
+    const rawAge = (ageIsAutoPopulated ? confirmedDemoFields.has('age') : !!demoAge.trim())
+      ? (prefillData.demographics.age.value ?? (demoAge ? parseInt(demoAge, 10) : null))
+      : null;
+    const confirmedBiologicalSex = (biologicalSexIsAutoPopulated ? confirmedDemoFields.has('biologicalSex') : !!demoBiologicalSex.trim())
+      ? (prefillData.demographics.biologicalSex.value ?? (demoBiologicalSex || null))
+      : null;
+
+    const deidentifyAge = (age: number | null): number | '90+' | null => {
+      if (age === null) return null;
+      return age >= 89 ? '90+' : age;
+    };
+    const yearOnly = (dateStr: string | null | undefined): string | undefined => {
+      if (!dateStr) return undefined;
+      const year = new Date(dateStr).getFullYear();
+      return Number.isNaN(year) ? undefined : String(year);
+    };
+    const deidentifyLab = (entry: ReturnType<typeof parseValueEntry>) => {
+      if (!entry) return null;
+      return { ...entry, date: yearOnly(entry.date) ?? entry.date };
+    };
+
+    return {
+      demographics: {
+        ethnicity: demoEthnicity,
+        race: demoRace,
+        age: deidentifyAge(rawAge),
+        biologicalSex: confirmedBiologicalSex,
+        dateOfBirth: null,
+      },
+      medications: [
+        ...editableMeds.filter(m => confirmedMedIds.has(m.id)),
+        ...otherMeds.filter(m => confirmedMedIds.has(m.id)),
+      ].map(m => ({
+        name: m.name,
+        brandName: m.brandName,
+        groupKey: m.groupKey,
+      })),
+      surgicalHistory: editableProcs
+        .filter(p => confirmedProcIds.has(p.id))
+        .map(p => ({
+          name: p.name,
+          commonName: p.commonName,
+          date: yearOnly(p.date),
+          isBPH: p.isBPH,
+        })),
+      conditions: buildConfirmedConditions().map(name => ({ name })),
+      labs: {
+        psa: confirmedLabIds.has('lab_psa') ? deidentifyLab(parseValueEntry(labById.lab_psa)) : null,
+        hba1c: confirmedLabIds.has('lab_hba1c') ? deidentifyLab(parseValueEntry(labById.lab_hba1c)) : null,
+        urinalysis: confirmedLabIds.has('lab_urinalysis') ? deidentifyLab(parseValueEntry(labById.lab_urinalysis)) : null,
+      },
+      clinicalMeasurements: {
+        pvr: confirmedMeasurementIds.has('measurement_pvr') ? deidentifyLab(parseValueEntry(measurementById.measurement_pvr)) : null,
+        uroflowQmax: confirmedMeasurementIds.has('measurement_uroflowQmax') ? deidentifyLab(parseValueEntry(measurementById.measurement_uroflowQmax)) : null,
+        volumeVoided: confirmedMeasurementIds.has('measurement_volumeVoided') ? deidentifyLab(parseValueEntry(measurementById.measurement_volumeVoided)) : null,
+        mobility: prefillData.clinicalMeasurements.mobility.value ?? null,
+      },
+    };
+  }, [
+    prefillData,
+    editableLabs,
+    editableMeasurements,
+    editableMeds,
+    otherMeds,
+    editableProcs,
+    confirmedDemoFields,
+    confirmedMedIds,
+    rejectedMedIds,
+    confirmedProcIds,
+    rejectedProcIds,
+    confirmedLabIds,
+    rejectedLabIds,
+    confirmedMeasurementIds,
+    rejectedMeasurementIds,
+    demoAge,
+    demoBiologicalSex,
+    demoEthnicity,
+    demoRace,
+    ageIsAutoPopulated,
+    biologicalSexIsAutoPopulated,
+    buildConfirmedConditions,
+  ]);
+
+  const persistConfirmedEntries = useCallback(async () => {
+    const authUser = getAuth().currentUser;
+    const uid = authUser?.uid;
+    if (!uid || !prefillData) return;
+
+    const normalizedName = demoName.trim();
+    const normalizedPhone = demoPhone.trim();
+    const normalizedEmail = authUser.email?.trim() || '';
+    const includeFullName = fullNameIsAutoPopulated ? confirmedDemoFields.has('fullName') : !!normalizedName;
+    const includePhone = !!normalizedPhone;
+    const includeAge = ageIsAutoPopulated ? confirmedDemoFields.has('age') : !!demoAge.trim();
+    const includeBiologicalSex = biologicalSexIsAutoPopulated
+      ? confirmedDemoFields.has('biologicalSex')
+      : !!demoBiologicalSex.trim();
+    const includeEthnicity = !!demoEthnicity.trim();
+    const includeRace = !!demoRace.trim();
+
+    const profilePayload = {
+      name: includeFullName ? normalizedName || authUser.displayName || undefined : undefined,
+      displayName: includeFullName ? normalizedName || authUser.displayName || undefined : undefined,
+      firstName: includeFullName && normalizedName ? normalizedName.split(/\s+/)[0] : undefined,
+      lastName: includeFullName && normalizedName ? normalizedName.split(/\s+/).slice(1).join(' ') || undefined : undefined,
+      email: normalizedEmail || undefined,
+      phoneNumber: includePhone ? normalizedPhone || undefined : undefined,
+    };
+
+    saveUserProfile(uid, profilePayload).catch((err) => {
+      console.warn('[MedicalHistory] Failed to save user profile:', err);
+    });
+
+    const demographicFieldsReady =
+      includeFullName && includeAge && includeBiologicalSex && includeEthnicity && includeRace;
+
+    if (demographicFieldsReady) {
+      const rawAge = prefillData.demographics.age.value ?? (demoAge ? parseInt(demoAge, 10) : null);
+      const confirmedBiologicalSex =
+        prefillData.demographics.biologicalSex.value ?? (demoBiologicalSex || null);
+
+      saveConfirmedDemographicsPrefill(uid, {
+        fullName: normalizedName,
+        age: rawAge,
+        biologicalSex: confirmedBiologicalSex,
+        ethnicity: demoEthnicity,
+        race: demoRace,
+      }).catch((err) => {
+        console.warn('[MedicalHistory] Failed to save confirmed demographics prefill:', err);
+      });
+    }
+
+    const payload = buildConfirmedMedicalHistoryPayload();
+    if (payload) {
+      saveMedicalHistory(uid, payload).catch((err) => {
+        console.warn('[MedicalHistory] Failed to save to Firestore:', err);
+      });
+    }
+  }, [
+    prefillData,
+    demoName,
+    demoPhone,
+    demoAge,
+    demoBiologicalSex,
+    demoEthnicity,
+    demoRace,
+    fullNameIsAutoPopulated,
+    ageIsAutoPopulated,
+    biologicalSexIsAutoPopulated,
+    confirmedDemoFields,
+    buildConfirmedMedicalHistoryPayload,
+  ]);
+
+  useEffect(() => {
+    void persistConfirmedEntries();
+  }, [persistConfirmedEntries]);
+
   // ── Save and navigate ─────────────────────────────────────────────
 
   const handleContinue = async () => {
-    const medications: string[] = [];
-    const conditions: string[] = [];
-    const surgicalHistory: string[] = [];
-    const bphTreatmentHistory: string[] = [];
-
-    // Use the user-edited lists (initialized from health records, may have been corrected)
-    for (const med of editableMeds) {
-      medications.push(med.name);
-      bphTreatmentHistory.push(med.name);
-    }
-
-    for (const proc of editableProcs) {
-      surgicalHistory.push(proc.name);
-      if (proc.isBPH) bphTreatmentHistory.push(proc.name);
-    }
-
-    if (prefillData) {
-      const condEntries = [
-        prefillData.conditions.diabetes,
-        prefillData.conditions.hypertension,
-        prefillData.conditions.bph,
-        prefillData.conditions.other,
-      ];
-      for (const entry of condEntries) {
-        if (entry.value) {
-          for (const cond of entry.value) conditions.push(cond.name);
-        }
-      }
-    }
-
-    for (const cond of otherConds) {
-      if (cond.name.trim()) conditions.push(cond.name.trim());
-    }
+    const confirmedMedications = [
+      ...editableMeds.filter(med => confirmedMedIds.has(med.id)),
+      ...otherMeds.filter(med => confirmedMedIds.has(med.id)),
+    ];
+    const confirmedProcedures = editableProcs.filter(proc => confirmedProcIds.has(proc.id));
+    const conditions = buildConfirmedConditions();
+    const medications = confirmedMedications.map(med => med.name);
+    const surgicalHistory = confirmedProcedures.map(proc => proc.name);
+    const bphTreatmentHistory = [
+      ...confirmedMedications.map(med => med.name),
+      ...confirmedProcedures.filter(proc => proc.isBPH).map(proc => proc.name),
+    ];
 
     const demoSummary = [
-      demoName && `Name: ${demoName}`,
-      demoAge && `Age: ${demoAge}`,
-      demoBiologicalSex && `Sex: ${demoBiologicalSex}`,
-      demoEthnicity && `Ethnicity: ${demoEthnicity}`,
-      demoRace && `Race: ${demoRace}`,
+      fullNameReady && demoName && `Name: ${demoName}`,
+      phoneReady && demoPhone && `Phone: ${demoPhone}`,
+      ageReady && (prefillData.demographics.age.value ?? demoAge) && `Age: ${prefillData.demographics.age.value ?? demoAge}`,
+      biologicalSexReady && (prefillData.demographics.biologicalSex.value ?? demoBiologicalSex) && `Sex: ${prefillData.demographics.biologicalSex.value ?? demoBiologicalSex}`,
+      ethnicityReady && demoEthnicity && `Ethnicity: ${demoEthnicity}`,
+      raceReady && demoRace && `Race: ${demoRace}`,
     ].filter(Boolean).join(', ');
 
     await OnboardingService.updateData({
@@ -588,75 +1013,81 @@ export default function MedicalHistoryScreen() {
       },
     });
 
-    // ── Write combined medical_history/current to Firestore ──────────
-    // User form data + FHIR prefill for fields not collected in the form
-    // (labs, clinical measurements, HK demographics).
-    const uid = getAuth().currentUser?.uid;
-    if (uid) {
-      const labEntry = (entry: { value: LabValue | null } | undefined) =>
-        entry?.value ?? null;
-
-      // HIPAA Safe Harbor de-identification helpers
-      const deidentifyAge = (age: number | null): number | '90+' | null => {
-        if (age === null) return null;
-        return age >= 89 ? '90+' : age;
-      };
-      const yearOnly = (dateStr: string | null | undefined): string | undefined => {
-        if (!dateStr) return undefined;
-        const year = new Date(dateStr).getFullYear();
-        return Number.isNaN(year) ? undefined : String(year);
-      };
-      const deidentifyLab = (entry: ReturnType<typeof labEntry>) => {
-        if (!entry) return null;
-        return { ...entry, date: yearOnly(entry.date) ?? entry.date };
-      };
-
-      const rawAge = prefillData?.demographics.age.value ?? (demoAge ? parseInt(demoAge, 10) : null);
-
-      saveMedicalHistory(uid, {
-        demographics: {
-          // name omitted — HIPAA Safe Harbor identifier #1
-          ethnicity: demoEthnicity,
-          race: demoRace,
-          age: deidentifyAge(rawAge),
-          biologicalSex: prefillData?.demographics.biologicalSex.value ?? (demoBiologicalSex || null),
-          dateOfBirth: null,
-        },
-        medications: editableMeds.map(m => ({
-          name: m.name,
-          brandName: m.brandName,
-          groupKey: m.groupKey,
-        })),
-        surgicalHistory: editableProcs.map(p => ({
-          name: p.name,
-          commonName: p.commonName,
-          date: yearOnly(p.date),  // year only — HIPAA identifier #3
-          isBPH: p.isBPH,
-        })),
-        conditions: conditions.map(name => ({ name })),
-        labs: {
-          psa: deidentifyLab(labEntry(prefillData?.labs.psa)),
-          hba1c: deidentifyLab(labEntry(prefillData?.labs.hba1c)),
-          urinalysis: deidentifyLab(labEntry(prefillData?.labs.urinalysis)),
-        },
-        clinicalMeasurements: {
-          pvr: deidentifyLab(labEntry(prefillData?.clinicalMeasurements.pvr)),
-          uroflowQmax: deidentifyLab(labEntry(prefillData?.clinicalMeasurements.uroflowQmax)),
-          volumeVoided: deidentifyLab(labEntry(prefillData?.clinicalMeasurements.volumeVoided)),
-          mobility: prefillData?.clinicalMeasurements.mobility.value ?? null,
-        },
-      }).catch((err) => {
-        console.warn('[MedicalHistory] Failed to save to Firestore:', err);
-      });
-    }
-
     await OnboardingService.goToStep(OnboardingStep.BASELINE_SURVEY);
     router.push('/(onboarding)/baseline-survey' as Href);
   };
 
+  const handlePreviousStep = useCallback(() => {
+    if (reviewStep === 0) {
+      router.back();
+      return;
+    }
+
+    Animated.timing(stepFade, {
+      toValue: 0,
+      duration: 120,
+      useNativeDriver: true,
+    }).start(() => {
+      setReviewStep(prev => Math.max(0, prev - 1));
+      Animated.timing(stepFade, {
+        toValue: 1,
+        duration: 200,
+        useNativeDriver: true,
+      }).start();
+    });
+  }, [reviewStep, router, stepFade]);
+
+  const handleNextStep = useCallback(() => {
+    Animated.timing(stepFade, {
+      toValue: 0,
+      duration: 120,
+      useNativeDriver: true,
+    }).start(() => {
+      if (reviewStep < 5) {
+        setReviewStep(prev => prev + 1);
+      } else {
+        setPhase('complete');
+        Animated.spring(confirmFade, {
+          toValue: 1,
+          useNativeDriver: true,
+          tension: 50,
+          friction: 8,
+        }).start();
+      }
+
+      Animated.timing(stepFade, {
+        toValue: 1,
+        duration: 200,
+        useNativeDriver: true,
+      }).start();
+    });
+  }, [reviewStep, stepFade, confirmFade]);
+
+  const ageReady = ageIsAutoPopulated ? confirmedDemoFields.has('age') : !!demoAge.trim();
+  const biologicalSexReady = biologicalSexIsAutoPopulated
+    ? confirmedDemoFields.has('biologicalSex')
+    : !!demoBiologicalSex.trim();
+  const fullNameReady = fullNameIsAutoPopulated
+    ? confirmedDemoFields.has('fullName')
+    : !!demoName.trim();
+  const phoneReady = !!demoPhone.trim();
+  const ethnicityReady = !!demoEthnicity.trim();
+  const raceReady = !!demoRace.trim();
+
+  const stepCanProceed = reviewStep === 0
+    ? ageReady && biologicalSexReady && fullNameReady && phoneReady && ethnicityReady && raceReady
+    : reviewStep === 1
+    ? [...editableMeds, ...otherMeds].every(item => confirmedMedIds.has(item.id) || rejectedMedIds.has(item.id))
+    : reviewStep === 2
+    ? editableProcs.every(item => confirmedProcIds.has(item.id) || rejectedProcIds.has(item.id))
+    : reviewStep === 3
+    ? editableLabs.filter(item => item.value.trim()).every(item => confirmedLabIds.has(item.id) || rejectedLabIds.has(item.id))
+    : reviewStep === 4
+    ? [...editableHealthConds, ...otherConds].every(item => confirmedCondIds.has(item.id) || rejectedCondIds.has(item.id))
+    : editableMeasurements.filter(item => item.value.trim()).every(item => confirmedMeasurementIds.has(item.id) || rejectedMeasurementIds.has(item.id));
+
   // ── Shared style values ───────────────────────────────────────────
 
-  const cardBg = isDark ? '#1E2022' : '#F5F5F7';
   const sectionBg = isDark ? '#2A2D2F' : '#FFFFFF';
   const borderColor = isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.06)';
 
@@ -709,11 +1140,19 @@ export default function MedicalHistoryScreen() {
                   </View>
                 </TouchableOpacity>
               )}
-              {editingProcId !== item.id && (
-                <View style={reviewStyles.sourceBadge}>
-                  <Text style={reviewStyles.sourceBadgeText}>Health Records</Text>
-                </View>
-              )}
+              {editingProcId !== item.id ? (
+                <RowActionIcons
+                  checked={confirmedProcIds.has(item.id)}
+                  rejected={rejectedProcIds.has(item.id)}
+                  onEdit={() => {
+                    setEditingProcId(item.id);
+                    setEditingProcValue(item.name);
+                    setEditingMedId(null);
+                  }}
+                  onConfirm={() => setResolutionState(item.id, setConfirmedProcIds, setRejectedProcIds, 'confirmed')}
+                  onReject={() => setResolutionState(item.id, setConfirmedProcIds, setRejectedProcIds, 'rejected')}
+                />
+              ) : null}
             </View>
           ))
         ) : (
@@ -728,134 +1167,308 @@ export default function MedicalHistoryScreen() {
   function renderStepContent() {
     if (!prefillData) return null;
 
+    const renderEditableValueRow = (
+      item: EditableValueItem,
+      confirmedSet: Set<string>,
+      setConfirmed: React.Dispatch<React.SetStateAction<Set<string>>>,
+    ) => {
+      const isEditing = editingValueId === item.id;
+      const meta = [
+        item.date ? formatShortDate(item.date) : null,
+        item.referenceRange ? `Ref: ${item.referenceRange}` : null,
+      ].filter(Boolean).join(' · ');
+      const displayValue = item.value.trim()
+        ? (item.unit ? `${item.value} ${item.unit}` : item.value)
+        : null;
+
+      return (
+        <View key={item.id} style={[reviewStyles.labRow, { borderBottomColor: borderColor }]}>
+          <View style={reviewStyles.labLeft}>
+            <Text style={[reviewStyles.labName, { color: colors.text }]}>{item.label}</Text>
+            <Text style={[reviewStyles.labDescription, { color: colors.icon }]}>{item.description}</Text>
+          </View>
+          <View style={reviewStyles.labRight}>
+            {isEditing ? (
+              <TextInput
+                value={editingValueText}
+                onChangeText={setEditingValueText}
+                onSubmitEditing={() => {
+                  setEditingValueId(null);
+                  const trimmed = editingValueText.trim();
+                  const updateValue = (prev: EditableValueItem[]) => prev.map(entry =>
+                    entry.id === item.id ? { ...entry, value: trimmed } : entry
+                  );
+                  if (item.id.startsWith('lab_')) {
+                    setEditableLabs(updateValue);
+                  } else {
+                    setEditableMeasurements(updateValue);
+                  }
+                }}
+                returnKeyType="done"
+                keyboardType="decimal-pad"
+                autoFocus
+                placeholder="Enter value"
+                placeholderTextColor={colors.icon}
+                style={[reviewStyles.labValueInput, { color: colors.text }]}
+              />
+            ) : displayValue ? (
+              <>
+                <Text style={[reviewStyles.labValue, { color: colors.text }]}>{displayValue}</Text>
+                {meta ? (
+                  <Text style={[reviewStyles.labMeta, { color: colors.icon }]}>{meta}</Text>
+                ) : null}
+              </>
+            ) : (
+              <Text style={[reviewStyles.willAskText, { color: colors.icon }]}>Not found</Text>
+            )}
+            {!isEditing ? (
+              <RowActionIcons
+                checked={confirmedSet.has(item.id)}
+                rejected={(item.id.startsWith('lab_') ? rejectedLabIds : rejectedMeasurementIds).has(item.id)}
+                onEdit={() => {
+                  setEditingValueId(item.id);
+                  setEditingValueText(item.value);
+                }}
+                onConfirm={() => setResolutionState(
+                  item.id,
+                  setConfirmed,
+                  item.id.startsWith('lab_') ? setRejectedLabIds : setRejectedMeasurementIds,
+                  'confirmed',
+                )}
+                onReject={() => setResolutionState(
+                  item.id,
+                  setConfirmed,
+                  item.id.startsWith('lab_') ? setRejectedLabIds : setRejectedMeasurementIds,
+                  'rejected',
+                )}
+              />
+            ) : null}
+          </View>
+        </View>
+      );
+    };
+
     switch (reviewStep) {
       case 0:
         return (
-          <View style={[reviewStyles.card, { backgroundColor: sectionBg }]}>
-            {/* Age — static if from Apple Health, editable input otherwise */}
-            {prefillData.demographics.age.confidence !== 'none' && prefillData.demographics.age.value != null ? (
-              <DataRow
-                label="Age"
-                value={`${prefillData.demographics.age.value} years`}
-                found
-                colors={colors}
-                borderColor={borderColor}
-              />
-            ) : (
+          <>
+            <View style={[reviewStyles.card, { backgroundColor: sectionBg, marginBottom: 12 }]}>
+              <Text style={[reviewStyles.cardSectionTitle, { color: colors.icon }]}>
+                HEALTH RECORDS
+              </Text>
+              <View style={reviewStyles.epicCardBody}>
+                <Text style={[reviewStyles.epicCardText, { color: colors.icon }]}>
+                  Import additional clinical notes and records from a SMART-connected provider.
+                  Epic Sandbox remains available here for testing.
+                </Text>
+                <TouchableOpacity
+                  style={[
+                    reviewStyles.epicButton,
+                    providerConnection
+                      ? reviewStyles.epicButtonConnected
+                      : reviewStyles.epicButtonPrimary,
+                  ]}
+                  activeOpacity={0.7}
+                  onPress={() => router.push('/smart-connect' as Href)}
+                >
+                  <Text
+                    style={[
+                      reviewStyles.epicButtonText,
+                      providerConnection
+                        ? reviewStyles.epicButtonTextConnected
+                        : reviewStyles.epicButtonTextPrimary,
+                    ]}
+                  >
+                    {providerConnection
+                      ? `${providerConnection.providerName} Connected`
+                      : 'Connect Health Records'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            <View style={[reviewStyles.card, { backgroundColor: sectionBg }]}>
+              {/* Age — static if from Apple Health, editable input otherwise */}
+              {prefillData.demographics.age.confidence !== 'none' && prefillData.demographics.age.value != null ? (
+                <DataRow
+                  label="Age"
+                  value={`${prefillData.demographics.age.value} years`}
+                  found
+                  actions={(
+                    <RowActionIcons
+                      checked={confirmedDemoFields.has('age')}
+                      onEdit={() => {}}
+                      showEdit={false}
+                      onConfirm={() => updateConfirmedSet(setConfirmedDemoFields, 'age')}
+                    />
+                  )}
+                  colors={colors}
+                  borderColor={borderColor}
+                />
+              ) : (
+                <InlineInputRow
+                  label="Age"
+                  value={demoAge}
+                  onChange={setDemoAge}
+                  onSubmit={() => {}}
+                  keyboardType="number-pad"
+                  autoFocus={false}
+                  placeholder="Enter age in years"
+                  autoCapitalize="none"
+                  colors={colors}
+                  borderColor={borderColor}
+                />
+              )}
+
+              {/* Biological Sex — static if from Apple Health, picker otherwise */}
+              {prefillData.demographics.biologicalSex.confidence !== 'none' && prefillData.demographics.biologicalSex.value ? (
+                <DataRow
+                  label="Biological Sex"
+                  value={capitalize(prefillData.demographics.biologicalSex.value)}
+                  found
+                  actions={(
+                    <RowActionIcons
+                      checked={confirmedDemoFields.has('biologicalSex')}
+                      showEdit={false}
+                      onConfirm={() => updateConfirmedSet(setConfirmedDemoFields, 'biologicalSex')}
+                    />
+                  )}
+                  colors={colors}
+                  borderColor={borderColor}
+                />
+              ) : demoBiologicalSex ? (
+                <DataRow
+                  label="Biological Sex"
+                  value={demoBiologicalSex}
+                  found
+                  showBadge={false}
+                  actions={(
+                    <RowActionIcons
+                      onEdit={() => openPicker('biologicalSex')}
+                    />
+                  )}
+                  colors={colors}
+                  borderColor={borderColor}
+                />
+              ) : (
+                <SelectDataRow
+                  label="Biological Sex"
+                  onPress={() => openPicker('biologicalSex')}
+                  colors={colors}
+                  borderColor={borderColor}
+                />
+              )}
+
+              {/* Full Name — inline input on initial entry or when re-editing */}
+              {(demoStage === 'name' || demoEditingField === 'name') ? (
+                <InlineInputRow
+                  label="Full Name"
+                  value={demoName}
+                  onChange={setDemoName}
+                  onSubmit={() => {
+                    if (demoStage === 'name') {
+                      setDemoStage('ethnicity');
+                    } else {
+                      setDemoEditingField(null);
+                    }
+                  }}
+                  actions={fullNameIsAutoPopulated ? (
+                    <RowActionIcons
+                      checked={confirmedDemoFields.has('fullName')}
+                      showEdit={false}
+                      onConfirm={() => updateConfirmedSet(setConfirmedDemoFields, 'fullName')}
+                    />
+                  ) : undefined}
+                  colors={colors}
+                  borderColor={borderColor}
+                />
+              ) : (
+                <DataRow
+                  label="Full Name"
+                  value={demoName || '—'}
+                  found
+                  showBadge={false}
+                  actions={(
+                    <RowActionIcons
+                      onEdit={() => setDemoEditingField('name')}
+                      {...(fullNameIsAutoPopulated
+                        ? { checked: confirmedDemoFields.has('fullName'), onConfirm: () => updateConfirmedSet(setConfirmedDemoFields, 'fullName') }
+                        : { checked: false })}
+                    />
+                  )}
+                  colors={colors}
+                  borderColor={borderColor}
+                />
+              )}
+
               <InlineInputRow
-                label="Age"
-                value={demoAge}
-                onChange={setDemoAge}
+                label="Phone Number"
+                value={demoPhone}
+                onChange={setDemoPhone}
                 onSubmit={() => {}}
-                keyboardType="number-pad"
+                keyboardType="phone-pad"
                 autoFocus={false}
-                placeholder="Enter age in years"
+                placeholder="Enter phone number"
                 autoCapitalize="none"
                 colors={colors}
                 borderColor={borderColor}
               />
-            )}
 
-            {/* Biological Sex — static if from Apple Health, picker otherwise */}
-            {prefillData.demographics.biologicalSex.confidence !== 'none' && prefillData.demographics.biologicalSex.value ? (
-              <DataRow
-                label="Biological Sex"
-                value={capitalize(prefillData.demographics.biologicalSex.value)}
-                found
-                colors={colors}
-                borderColor={borderColor}
-              />
-            ) : demoBiologicalSex ? (
-              <DataRow
-                label="Biological Sex"
-                value={demoBiologicalSex}
-                found
-                showBadge={false}
-                onPress={() => handleFieldDoubleTap('biologicalSex', () => openPicker('biologicalSex'))}
-                colors={colors}
-                borderColor={borderColor}
-              />
-            ) : (
-              <SelectDataRow
-                label="Biological Sex"
-                onPress={() => openPicker('biologicalSex')}
-                colors={colors}
-                borderColor={borderColor}
-              />
-            )}
+              {/* Ethnicity — tap-to-select, then locks as static (double-tap to re-open) */}
+              {(demoStage === 'ethnicity' || demoStage === 'race' || demoStage === 'done') && (
+                demoEthnicity ? (
+                  <DataRow
+                    label="Ethnicity"
+                    value={demoEthnicity}
+                    found
+                    showBadge={false}
+                    actions={(
+                      <RowActionIcons
+                        onEdit={() => openPicker('ethnicity')}
+                        checked={false}
+                      />
+                    )}
+                    colors={colors}
+                    borderColor={borderColor}
+                  />
+                ) : (
+                  <SelectDataRow
+                    label="Ethnicity"
+                    onPress={() => openPicker('ethnicity')}
+                    colors={colors}
+                    borderColor={borderColor}
+                  />
+                )
+              )}
 
-            {/* Full Name — inline input on initial entry or when re-editing */}
-            {(demoStage === 'name' || demoEditingField === 'name') ? (
-              <InlineInputRow
-                label="Full Name"
-                value={demoName}
-                onChange={setDemoName}
-                onSubmit={() => {
-                  if (demoStage === 'name') {
-                    setDemoStage('ethnicity');
-                  } else {
-                    setDemoEditingField(null);
-                  }
-                }}
-                colors={colors}
-                borderColor={borderColor}
-              />
-            ) : (
-              <DataRow
-                label="Full Name"
-                value={demoName || '—'}
-                found
-                showBadge={false}
-                onPress={() => handleFieldDoubleTap('name', () => setDemoEditingField('name'))}
-                colors={colors}
-                borderColor={borderColor}
-              />
-            )}
-
-            {/* Ethnicity — tap-to-select, then locks as static (double-tap to re-open) */}
-            {(demoStage === 'ethnicity' || demoStage === 'race' || demoStage === 'done') && (
-              demoEthnicity ? (
-                <DataRow
-                  label="Ethnicity"
-                  value={demoEthnicity}
-                  found
-                  showBadge={false}
-                  onPress={() => handleFieldDoubleTap('ethnicity', () => openPicker('ethnicity'))}
-                  colors={colors}
-                  borderColor={borderColor}
-                />
-              ) : (
-                <SelectDataRow
-                  label="Ethnicity"
-                  onPress={() => openPicker('ethnicity')}
-                  colors={colors}
-                  borderColor={borderColor}
-                />
-              )
-            )}
-
-            {/* Race — tap-to-select, then locks as static (double-tap to re-open) */}
-            {(demoStage === 'race' || demoStage === 'done') && (
-              demoRace ? (
-                <DataRow
-                  label="Race"
-                  value={demoRace}
-                  found
-                  showBadge={false}
-                  onPress={() => handleFieldDoubleTap('race', () => openPicker('race'))}
-                  colors={colors}
-                  borderColor={borderColor}
-                />
-              ) : (
-                <SelectDataRow
-                  label="Race"
-                  onPress={() => openPicker('race')}
-                  colors={colors}
-                  borderColor={borderColor}
-                />
-              )
-            )}
-          </View>
+              {/* Race — tap-to-select, then locks as static (double-tap to re-open) */}
+              {(demoStage === 'race' || demoStage === 'done') && (
+                demoRace ? (
+                  <DataRow
+                    label="Race"
+                    value={demoRace}
+                    found
+                    showBadge={false}
+                    actions={(
+                      <RowActionIcons
+                        onEdit={() => openPicker('race')}
+                        checked={false}
+                      />
+                    )}
+                    colors={colors}
+                    borderColor={borderColor}
+                  />
+                ) : (
+                  <SelectDataRow
+                    label="Race"
+                    onPress={() => openPicker('race')}
+                    colors={colors}
+                    borderColor={borderColor}
+                  />
+                )
+              )}
+            </View>
+          </>
         );
 
       case 1: {
@@ -863,23 +1476,9 @@ export default function MedicalHistoryScreen() {
           <>
             {/* All health-record medications in a single flat list */}
             <View style={[reviewStyles.card, { backgroundColor: sectionBg }]}>
-              <View style={reviewStyles.cardSectionTitleRow}>
-                <Text style={[reviewStyles.cardSectionTitle, reviewStyles.cardSectionTitleInRow, { color: colors.icon }]}>
-                  MEDICATIONS FROM HEALTH RECORDS
-                </Text>
-                <TouchableOpacity
-                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                  onPress={() => {
-                    if (editableMeds.length > 0) {
-                      setEditingMedId(editableMeds[0].id);
-                      setEditingMedValue(editableMeds[0].name);
-                      setEditingProcId(null);
-                    }
-                  }}
-                >
-                  <IconSymbol name="pencil" size={15} color={colors.icon} />
-                </TouchableOpacity>
-              </View>
+              <Text style={[reviewStyles.cardSectionTitle, { color: colors.icon }]}>
+                MEDICATIONS FROM HEALTH RECORDS
+              </Text>
               <View style={reviewStyles.medGroup}>
                 {editableMeds.length > 0 ? (
                   editableMeds.map(item => (
@@ -919,11 +1518,19 @@ export default function MedicalHistoryScreen() {
                           )}
                         </TouchableOpacity>
                       )}
-                      {editingMedId !== item.id && (
-                        <View style={reviewStyles.sourceBadge}>
-                          <Text style={reviewStyles.sourceBadgeText}>Health Records</Text>
-                        </View>
-                      )}
+                      {editingMedId !== item.id ? (
+                        <RowActionIcons
+                          checked={confirmedMedIds.has(item.id)}
+                          rejected={rejectedMedIds.has(item.id)}
+                          onEdit={() => {
+                            setEditingMedId(item.id);
+                            setEditingMedValue(item.name);
+                            setEditingProcId(null);
+                          }}
+                          onConfirm={() => setResolutionState(item.id, setConfirmedMedIds, setRejectedMedIds, 'confirmed')}
+                          onReject={() => setResolutionState(item.id, setConfirmedMedIds, setRejectedMedIds, 'rejected')}
+                        />
+                      ) : null}
                     </View>
                   ))
                 ) : (
@@ -970,9 +1577,9 @@ export default function MedicalHistoryScreen() {
                         style={[reviewStyles.medEditInput, { color: colors.text }]}
                       />
                     ) : (
-                      <TouchableOpacity
-                        style={{ flex: 1 }}
-                        onPress={() => handleFieldDoubleTap(`othermed_${item.id}`, () => {
+                    <TouchableOpacity
+                      style={{ flex: 1 }}
+                      onPress={() => handleFieldDoubleTap(`othermed_${item.id}`, () => {
                           setEditingMedId(item.id);
                           setEditingMedValue(item.name);
                           setEditingProcId(null);
@@ -982,6 +1589,19 @@ export default function MedicalHistoryScreen() {
                         <Text style={[reviewStyles.medName, { color: colors.text }]}>{item.name}</Text>
                       </TouchableOpacity>
                     )}
+                    {editingMedId !== item.id ? (
+                      <RowActionIcons
+                        checked={confirmedMedIds.has(item.id)}
+                        rejected={rejectedMedIds.has(item.id)}
+                        onEdit={() => {
+                          setEditingMedId(item.id);
+                          setEditingMedValue(item.name);
+                          setEditingProcId(null);
+                        }}
+                        onConfirm={() => setResolutionState(item.id, setConfirmedMedIds, setRejectedMedIds, 'confirmed')}
+                        onReject={() => setResolutionState(item.id, setConfirmedMedIds, setRejectedMedIds, 'rejected')}
+                      />
+                    ) : null}
                   </View>
                 ))}
                 <TouchableOpacity
@@ -1022,88 +1642,17 @@ export default function MedicalHistoryScreen() {
       }
 
       case 3: {
-        const labs = prefillData.labs;
-
-        function formatLabValue(val: number | undefined, unit: string | undefined): string | null {
-          if (val == null) return null;
-          return unit ? `${val} ${unit}` : String(val);
-        }
-
-        function LabRow({
-          label,
-          lab,
-          description,
-        }: {
-          label: string;
-          lab: typeof labs.psa;
-          description: string;
-        }) {
-          const found = lab.confidence !== 'none' && lab.value != null;
-          const displayValue = found ? formatLabValue(lab.value?.value, lab.value?.unit) : null;
-          const date = found && lab.value?.date ? formatShortDate(lab.value.date) : null;
-          const refRange = found && lab.value?.referenceRange ? lab.value.referenceRange : null;
-
-          return (
-            <View style={[reviewStyles.labRow, { borderBottomColor: borderColor }]}>
-              <View style={reviewStyles.labLeft}>
-                <Text style={[reviewStyles.labName, { color: colors.text }]}>{label}</Text>
-                <Text style={[reviewStyles.labDescription, { color: colors.icon }]}>{description}</Text>
-              </View>
-              <View style={reviewStyles.labRight}>
-                {found && displayValue ? (
-                  <>
-                    <Text style={[reviewStyles.labValue, { color: colors.text }]}>{displayValue}</Text>
-                    {(date || refRange) && (
-                      <Text style={[reviewStyles.labMeta, { color: colors.icon }]}>
-                        {[date, refRange ? `Ref: ${refRange}` : null].filter(Boolean).join(' · ')}
-                      </Text>
-                    )}
-                    <View style={reviewStyles.sourceBadge}>
-                      <Text style={reviewStyles.sourceBadgeText}>Health Records</Text>
-                    </View>
-                  </>
-                ) : (
-                  <Text style={[reviewStyles.willAskText, { color: colors.icon }]}>Not found</Text>
-                )}
-              </View>
-            </View>
-          );
-        }
-
         return (
           <View style={[reviewStyles.card, { backgroundColor: sectionBg }]}>
             <Text style={[reviewStyles.cardSectionTitle, { color: colors.icon }]}>
               LAB RESULTS FROM HEALTH RECORDS
             </Text>
-            <LabRow
-              label="PSA"
-              lab={labs.psa}
-              description="Prostate-Specific Antigen"
-            />
-            <LabRow
-              label="HbA1c"
-              lab={labs.hba1c}
-              description="Hemoglobin A1c (blood sugar)"
-            />
-            <LabRow
-              label="Urinalysis"
-              lab={labs.urinalysis}
-              description="Urine test panel"
-            />
+            {editableLabs.map(item => renderEditableValueRow(item, confirmedLabIds, setConfirmedLabIds))}
           </View>
         );
       }
 
       case 4: {
-        const conditions = prefillData.conditions;
-
-        const allConditions = [
-          ...(conditions.diabetes.value ?? []),
-          ...(conditions.hypertension.value ?? []),
-          ...(conditions.bph.value ?? []),
-          ...(conditions.other.value ?? []),
-        ];
-
         return (
           <>
             {/* Health-record conditions */}
@@ -1112,16 +1661,57 @@ export default function MedicalHistoryScreen() {
                 CONDITIONS FROM HEALTH RECORDS
               </Text>
               <View style={reviewStyles.medGroup}>
-                {allConditions.length > 0 ? (
-                  allConditions.map((cond, ci) => (
-                    <View key={ci} style={reviewStyles.medItem}>
+                {editableHealthConds.length > 0 ? (
+                  editableHealthConds.map(cond => (
+                    <View key={cond.id} style={reviewStyles.medItem}>
                       <Text style={[reviewStyles.medBullet, { color: StanfordColors.cardinal }]}>•</Text>
-                      <Text style={[reviewStyles.medName, { color: colors.text, flex: 1 }]}>
-                        {cond.name}
-                      </Text>
-                      <View style={reviewStyles.sourceBadge}>
-                        <Text style={reviewStyles.sourceBadgeText}>Health Records</Text>
-                      </View>
+                      {editingCondId === cond.id ? (
+                        <TextInput
+                          value={editingCondValue}
+                          onChangeText={setEditingCondValue}
+                          onSubmitEditing={() => {
+                            const trimmed = editingCondValue.trim();
+                            setEditableHealthConds(prev => prev.map(item =>
+                              item.id === cond.id ? { ...item, name: trimmed || item.name } : item
+                            ));
+                            setEditingCondId(null);
+                          }}
+                          returnKeyType="done"
+                          autoFocus
+                          placeholder="Condition name"
+                          placeholderTextColor={colors.icon}
+                          style={[reviewStyles.medEditInput, { color: colors.text }]}
+                        />
+                      ) : (
+                        <TouchableOpacity
+                          style={{ flex: 1 }}
+                          onPress={() => handleFieldDoubleTap(`cond_${cond.id}`, () => {
+                            setEditingCondId(cond.id);
+                            setEditingCondValue(cond.name);
+                            setEditingMedId(null);
+                            setEditingProcId(null);
+                          })}
+                          activeOpacity={0.8}
+                        >
+                          <Text style={[reviewStyles.medName, { color: colors.text, flex: 1 }]}>
+                            {cond.name}
+                          </Text>
+                        </TouchableOpacity>
+                      )}
+                      {editingCondId !== cond.id ? (
+                        <RowActionIcons
+                          checked={confirmedCondIds.has(cond.id)}
+                          rejected={rejectedCondIds.has(cond.id)}
+                          onEdit={() => {
+                            setEditingCondId(cond.id);
+                            setEditingCondValue(cond.name);
+                            setEditingMedId(null);
+                            setEditingProcId(null);
+                          }}
+                          onConfirm={() => setResolutionState(cond.id, setConfirmedCondIds, setRejectedCondIds, 'confirmed')}
+                          onReject={() => setResolutionState(cond.id, setConfirmedCondIds, setRejectedCondIds, 'rejected')}
+                        />
+                      ) : null}
                     </View>
                   ))
                 ) : (
@@ -1179,6 +1769,20 @@ export default function MedicalHistoryScreen() {
                         <Text style={[reviewStyles.medName, { color: colors.text }]}>{item.name}</Text>
                       </TouchableOpacity>
                     )}
+                    {editingCondId !== item.id ? (
+                      <RowActionIcons
+                        checked={confirmedCondIds.has(item.id)}
+                        rejected={rejectedCondIds.has(item.id)}
+                        onEdit={() => {
+                          setEditingCondId(item.id);
+                          setEditingCondValue(item.name);
+                          setEditingMedId(null);
+                          setEditingProcId(null);
+                        }}
+                        onConfirm={() => setResolutionState(item.id, setConfirmedCondIds, setRejectedCondIds, 'confirmed')}
+                        onReject={() => setResolutionState(item.id, setConfirmedCondIds, setRejectedCondIds, 'rejected')}
+                      />
+                    ) : null}
                   </View>
                 ))}
                 <TouchableOpacity
@@ -1204,90 +1808,12 @@ export default function MedicalHistoryScreen() {
       }
 
       case 5: {
-        const cm = prefillData.clinicalMeasurements;
-
-        function ClinicalRow({
-          label,
-          description,
-          value,
-          unit,
-          date,
-          referenceRange,
-          found,
-        }: {
-          label: string;
-          description: string;
-          value?: number | string | null;
-          unit?: string;
-          date?: string;
-          referenceRange?: string;
-          found: boolean;
-        }) {
-          const displayValue = found && value != null
-            ? (unit ? `${value} ${unit}` : String(value))
-            : null;
-          const meta = [
-            date ? formatShortDate(date) : null,
-            referenceRange ? `Ref: ${referenceRange}` : null,
-          ].filter(Boolean).join(' · ');
-
-          return (
-            <View style={[reviewStyles.labRow, { borderBottomColor: borderColor }]}>
-              <View style={reviewStyles.labLeft}>
-                <Text style={[reviewStyles.labName, { color: colors.text }]}>{label}</Text>
-                <Text style={[reviewStyles.labDescription, { color: colors.icon }]}>{description}</Text>
-              </View>
-              <View style={reviewStyles.labRight}>
-                {displayValue ? (
-                  <>
-                    <Text style={[reviewStyles.labValue, { color: colors.text }]}>{displayValue}</Text>
-                    {meta ? (
-                      <Text style={[reviewStyles.labMeta, { color: colors.icon }]}>{meta}</Text>
-                    ) : null}
-                    <View style={reviewStyles.sourceBadge}>
-                      <Text style={reviewStyles.sourceBadgeText}>Health Records</Text>
-                    </View>
-                  </>
-                ) : (
-                  <Text style={[reviewStyles.willAskText, { color: colors.icon }]}>Not found</Text>
-                )}
-              </View>
-            </View>
-          );
-        }
-
         return (
           <View style={[reviewStyles.card, { backgroundColor: sectionBg }]}>
             <Text style={[reviewStyles.cardSectionTitle, { color: colors.icon }]}>
               CLINICAL MEASUREMENTS FROM HEALTH RECORDS
             </Text>
-            <ClinicalRow
-              label="PVR"
-              description="Post-Void Residual volume"
-              value={cm.pvr.value?.value}
-              unit={cm.pvr.value?.unit}
-              date={cm.pvr.value?.date}
-              referenceRange={cm.pvr.value?.referenceRange}
-              found={cm.pvr.confidence !== 'none'}
-            />
-            <ClinicalRow
-              label="Uroflow Qmax"
-              description="Maximum urinary flow rate"
-              value={cm.uroflowQmax.value?.value}
-              unit={cm.uroflowQmax.value?.unit}
-              date={cm.uroflowQmax.value?.date}
-              referenceRange={cm.uroflowQmax.value?.referenceRange}
-              found={cm.uroflowQmax.confidence !== 'none'}
-            />
-            <ClinicalRow
-              label="Volume Voided"
-              description="Urine volume per void (mL)"
-              value={cm.volumeVoided.value?.value}
-              unit={cm.volumeVoided.value?.unit}
-              date={cm.volumeVoided.value?.date}
-              referenceRange={cm.volumeVoided.value?.referenceRange}
-              found={cm.volumeVoided.confidence !== 'none'}
-            />
+            {editableMeasurements.map(item => renderEditableValueRow(item, confirmedMeasurementIds, setConfirmedMeasurementIds))}
           </View>
         );
       }
@@ -1393,16 +1919,21 @@ export default function MedicalHistoryScreen() {
             </Animated.View>
 
             <View style={[reviewStyles.actionContainer, { backgroundColor: colors.background, borderTopColor: borderColor }]}>
-              <ContinueButton
-                title={isLastStep ? 'Confirm All & Continue →' : 'Looks Correct →'}
-                onPress={() => handleConfirmStep(false)}
-              />
-              <TouchableOpacity
-                style={reviewStyles.correctionButton}
-                onPress={() => handleConfirmStep(true)}
-                activeOpacity={0.7}
-              >
-              </TouchableOpacity>
+              <View style={reviewStyles.footerButtons}>
+                <TouchableOpacity
+                  style={[reviewStyles.backButton, { borderColor }]}
+                  onPress={handlePreviousStep}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[reviewStyles.backButtonText, { color: colors.text }]}>Back</Text>
+                </TouchableOpacity>
+                <ContinueButton
+                  title={isLastStep ? 'Next' : 'Next'}
+                  onPress={handleNextStep}
+                  disabled={!stepCanProceed}
+                  style={reviewStyles.nextButton}
+                />
+              </View>
             </View>
           </>
         )}
@@ -1500,14 +2031,6 @@ const reviewStyles = StyleSheet.create({
     borderRadius: 14,
     overflow: 'hidden',
   },
-  cardSectionTitleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: Spacing.md,
-    paddingTop: Spacing.md,
-    paddingBottom: Spacing.xs,
-  },
   cardSectionTitle: {
     fontSize: 11,
     fontWeight: '700',
@@ -1515,11 +2038,6 @@ const reviewStyles = StyleSheet.create({
     paddingHorizontal: Spacing.md,
     paddingTop: Spacing.md,
     paddingBottom: Spacing.xs,
-  },
-  cardSectionTitleInRow: {
-    paddingHorizontal: 0,
-    paddingTop: 0,
-    paddingBottom: 0,
   },
   dataRow: {
     flexDirection: 'row',
@@ -1615,19 +2133,63 @@ const reviewStyles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '500',
   },
+  epicCardBody: {
+    paddingHorizontal: Spacing.md,
+    paddingBottom: Spacing.md,
+    gap: Spacing.sm,
+  },
+  epicCardText: {
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  epicButton: {
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  epicButtonPrimary: {
+    backgroundColor: StanfordColors.cardinal,
+  },
+  epicButtonConnected: {
+    backgroundColor: 'rgba(52, 199, 89, 0.14)',
+  },
+  epicButtonText: {
+    fontSize: 15,
+    fontWeight: '600',
+  },
+  epicButtonTextPrimary: {
+    color: '#FFFFFF',
+  },
+  epicButtonTextConnected: {
+    color: '#1F7A37',
+  },
   actionContainer: {
     paddingHorizontal: Spacing.screenHorizontal,
     paddingTop: Spacing.md,
     paddingBottom: Spacing.sm,
     borderTopWidth: StyleSheet.hairlineWidth,
-    gap: Spacing.xs,
   },
-  correctionButton: {
+  footerButtons: {
+    flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: Spacing.sm,
+    gap: Spacing.sm,
   },
-  correctionText: {
-    fontSize: 14,
+  backButton: {
+    minHeight: 52,
+    borderWidth: 1,
+    borderRadius: 999,
+    paddingHorizontal: Spacing.lg,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  backButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  nextButton: {
+    flex: 1,
   },
   inlineInput: {
     fontSize: 15,
@@ -1646,6 +2208,34 @@ const reviewStyles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '500',
     flex: 1,
+    paddingVertical: 0,
+    paddingHorizontal: 0,
+  },
+  rowActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginLeft: 8,
+  },
+  actionButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(140, 21, 21, 0.08)',
+  },
+  actionButtonConfirmed: {
+    backgroundColor: 'rgba(52, 199, 89, 0.14)',
+  },
+  actionButtonRejected: {
+    backgroundColor: 'rgba(217, 48, 37, 0.12)',
+  },
+  labValueInput: {
+    fontSize: 15,
+    fontWeight: '500',
+    textAlign: 'right',
+    minWidth: 96,
     paddingVertical: 0,
     paddingHorizontal: 0,
   },

@@ -20,7 +20,10 @@ type Stroke = Point[];
 export interface SignaturePadRef {
   clear: () => void;
   hasSignature: () => boolean;
+  getSignatureSvgMarkup: () => string | null;
 }
+
+const EXPORTED_SIGNATURE_STROKE_COLOR = '#111111';
 
 interface SignaturePadProps {
   onChanged: (hasSignature: boolean) => void;
@@ -43,6 +46,7 @@ export const SignaturePad = forwardRef<SignaturePadRef, SignaturePadProps>(
     ref,
   ) {
     const [strokes, setStrokes] = useState<Stroke[]>([]);
+    const [padSize, setPadSize] = useState({ width: 0, height });
 
     // Keep a ref so PanResponder callbacks (created once) always call the latest prop
     const onDrawingActiveChangeRef = useRef(onDrawingActiveChange);
@@ -54,6 +58,23 @@ export const SignaturePad = forwardRef<SignaturePadRef, SignaturePadProps>(
         onChanged(false);
       },
       hasSignature: () => strokes.length > 0 && strokes.some(s => s.length > 1),
+      getSignatureSvgMarkup: () => {
+        const completeStrokes = strokes.filter(s => s.length > 1);
+        if (completeStrokes.length === 0 || padSize.width <= 0 || padSize.height <= 0) {
+          return null;
+        }
+
+        const polylines = completeStrokes
+          .map(stroke => {
+            const points = stroke
+              .map(point => `${point.x.toFixed(1)},${point.y.toFixed(1)}`)
+              .join(' ');
+            return `<polyline points="${points}" fill="none" stroke="${EXPORTED_SIGNATURE_STROKE_COLOR}" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" />`;
+          })
+          .join('');
+
+        return `<svg xmlns="http://www.w3.org/2000/svg" width="${padSize.width.toFixed(1)}" height="${padSize.height.toFixed(1)}" viewBox="0 0 ${padSize.width.toFixed(1)} ${padSize.height.toFixed(1)}" preserveAspectRatio="xMidYMid meet">${polylines}</svg>`;
+      },
     }));
 
     const panResponder = useRef(
@@ -93,6 +114,10 @@ export const SignaturePad = forwardRef<SignaturePadRef, SignaturePadProps>(
     return (
       <View
         style={[styles.pad, { backgroundColor, height }]}
+        onLayout={event => {
+          const { width, height: layoutHeight } = event.nativeEvent.layout;
+          setPadSize({ width, height: layoutHeight });
+        }}
         {...panResponder.panHandlers}
       >
         {isEmpty && (

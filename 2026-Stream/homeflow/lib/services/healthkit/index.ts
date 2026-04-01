@@ -46,6 +46,8 @@ export {
   getClinicalConditions,
   getClinicalProcedures,
   getClinicalNotes,
+  getHealthKitDocumentSamples,
+  probeClinicalNoteAccess,
   getAllClinicalRecords,
 } from './ClinicalRecordsClient';
 
@@ -53,6 +55,8 @@ export { ClinicalRecordType } from '@/modules/expo-clinical-records/src';
 
 export type {
   ClinicalRecord,
+  ClinicalDocumentSample,
+  ClinicalNoteAccessProbeResult,
   ClinicalRecordQueryOptions,
   ClinicalRecordsAuthResult,
 } from '@/modules/expo-clinical-records/src';

@@ -21,7 +21,6 @@ import {
 } from 'react-native';
 import { useRouter, Href } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import * as AppleAuthentication from 'expo-apple-authentication';
 import { Colors, StanfordColors, Spacing } from '@/constants/theme';
 import { useAuth } from '@/hooks/use-auth';
 
@@ -29,7 +28,7 @@ export default function SignupScreen() {
   const router = useRouter();
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? 'light'];
-  const { signUpWithEmail, signInWithApple, signInWithGoogle } = useAuth();
+  const { signUpWithEmail, signInWithGoogle } = useAuth();
 
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
@@ -55,25 +54,17 @@ export default function SignupScreen() {
         lastName: lastName.trim(),
       });
     } catch (error: any) {
-      const message = error?.code === 'auth/email-already-in-use'
+      const code = error?.code ?? '';
+      const rawMessage = error?.message ?? '';
+      console.error('[Signup] Email sign-up failed:', { code, rawMessage });
+      const message = code === 'auth/email-already-in-use'
         ? 'An account with this email already exists.'
-        : error?.code === 'auth/weak-password'
+        : code === 'auth/weak-password'
         ? 'Password is too weak. Use at least 6 characters.'
-        : error?.message || 'Sign up failed. Please try again.';
+        : code === 'auth/operation-not-allowed'
+        ? 'Email/password authentication is not enabled for this Firebase project.'
+        : rawMessage || 'Sign up failed. Please try again.';
       Alert.alert('Sign Up Failed', message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleAppleLogin = async () => {
-    setLoading(true);
-    try {
-      await signInWithApple();
-    } catch (error: any) {
-      if (error?.code !== 'ERR_REQUEST_CANCELED') {
-        Alert.alert('Apple Sign In Failed', error?.message || 'Please try again.');
-      }
     } finally {
       setLoading(false);
     }
@@ -172,20 +163,6 @@ export default function SignupScreen() {
           </View>
 
           <View style={styles.socialButtons}>
-            {Platform.OS === 'ios' && (
-              <AppleAuthentication.AppleAuthenticationButton
-                buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_UP}
-                buttonStyle={
-                  colorScheme === 'dark'
-                    ? AppleAuthentication.AppleAuthenticationButtonStyle.WHITE
-                    : AppleAuthentication.AppleAuthenticationButtonStyle.BLACK
-                }
-                cornerRadius={12}
-                style={styles.appleButton}
-                onPress={handleAppleLogin}
-              />
-            )}
-
             <TouchableOpacity
               style={[styles.socialButton, { borderColor: colors.border }]}
               onPress={handleGoogleLogin}
@@ -276,19 +253,21 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginVertical: Spacing.lg,
+    gap: Spacing.sm,
   },
   dividerLine: {
     flex: 1,
     height: 1,
   },
   dividerText: {
-    marginHorizontal: Spacing.md,
     fontSize: 14,
+    textTransform: 'uppercase',
   },
   socialButtons: {
-    gap: Spacing.sm,
+    gap: Spacing.md,
   },
   appleButton: {
+    width: '100%',
     height: 52,
   },
   socialButton: {
@@ -296,17 +275,19 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderRadius: 12,
     flexDirection: 'row',
-    justifyContent: 'center',
     alignItems: 'center',
-    gap: 10,
+    justifyContent: 'center',
+    gap: 12,
+    paddingHorizontal: 16,
   },
   googleLogo: {
-    width: 20,
-    height: 20,
+    width: 18,
+    height: 18,
+    resizeMode: 'contain',
   },
   socialButtonText: {
-    fontSize: 17,
-    fontWeight: '500',
+    fontSize: 16,
+    fontWeight: '600',
   },
   footer: {
     flexDirection: 'row',

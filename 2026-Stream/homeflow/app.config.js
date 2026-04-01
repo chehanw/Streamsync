@@ -1,3 +1,20 @@
+const fs = require("fs");
+const path = require("path");
+
+const googleServicesPath =
+  process.env.GOOGLE_SERVICES_PLIST ??
+  path.join(__dirname, "GoogleService-Info.plist");
+
+const iosConfig = {
+  supportsTablet: true,
+  bundleIdentifier: "com.dwong.homeflow",
+  deploymentTarget: "16.0",
+};
+
+if (fs.existsSync(googleServicesPath)) {
+  iosConfig.googleServicesFile = googleServicesPath;
+}
+
 module.exports = {
   expo: {
     name: "StreamSync",
@@ -8,15 +25,9 @@ module.exports = {
     scheme: "my-app",
     userInterfaceStyle: "automatic",
     newArchEnabled: true,
-    ios: {
-      supportsTablet: true,
-      bundleIdentifier: "com.chehan.homeflow",
-      deploymentTarget: "16.0",
-      usesAppleSignIn: true,
-      googleServicesFile: process.env.GOOGLE_SERVICES_PLIST ?? "./GoogleService-Info.plist",
-    },
+    ios: iosConfig,
     android: {
-      package: "com.chehan.homeflow",
+      package: "com.dwong.homeflow",
       adaptiveIcon: {
         backgroundColor: "#E6F4FE",
         foregroundImage: "./assets/images/android-icon-foreground.png",
@@ -62,19 +73,12 @@ module.exports = {
         }
       ],
       [
-        "./plugins/withClinicalRecords",
-        {
-          "usageDescription": "StreamSync would like to access your clinical health records to import medications, lab results, and conditions — reducing manual data entry."
-        }
-      ],
-      [
         "expo-notifications",
         {
           "icon": "./assets/images/icon.png",
           "color": "#8C1515"
         }
       ],
-      "expo-apple-authentication",
       [
         "@react-native-google-signin/google-signin",
         {

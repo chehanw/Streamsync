@@ -5,15 +5,17 @@ const fs = require('fs');
 // Find the project and workspace root
 const projectRoot = __dirname;
 const workspaceRoot = path.resolve(projectRoot, '.');
+const repoRoot = path.resolve(projectRoot, '../..');
 
 const config = getDefaultConfig(projectRoot);
 
-// Watch all files within the monorepo
-config.watchFolders = [workspaceRoot];
+// Watch local workspace files plus the repo-level node_modules used by this checkout.
+config.watchFolders = [workspaceRoot, repoRoot];
 
 // Configure resolver for monorepo - resolve to source files directly
 config.resolver.nodeModulesPaths = [
   path.resolve(projectRoot, 'node_modules'),
+  path.resolve(repoRoot, 'node_modules'),
 ];
 
 // Store the original resolver

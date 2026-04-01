@@ -22,16 +22,16 @@ import {
   TouchableOpacity,
   ActivityIndicator,
 } from 'react-native';
-import { useRouter, Href } from 'expo-router';
+import { useRouter, Href, useFocusEffect } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors, StanfordColors, Spacing } from '@/constants/theme';
 import { OnboardingStep } from '@/lib/constants';
 import { OnboardingService } from '@/lib/services/onboarding-service';
 import { ThroneService } from '@/lib/services/throne-service';
 import {
-  requestHealthPermissions,
   areClinicalRecordsAvailable,
   requestClinicalPermissions,
+  requestHealthPermissions,
 } from '@/lib/services/healthkit';
 import { requestNotificationPermissions } from '@/lib/services/notification-service';
 import {
@@ -42,7 +42,10 @@ import {
 } from '@/components/onboarding';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { useAuth } from '@/lib/auth/auth-context';
+import { getConnectedSmartProviderStatus } from '@/lib/services/smart';
+import type { SmartHealthSystem } from '@/lib/services/smart';
 import { saveThroneUserId } from '@/src/services/throneFirestore';
+import { getAuth } from '@/src/services/firestore';
 
 export default function PermissionsScreen() {
   const router = useRouter();
@@ -52,11 +55,11 @@ export default function PermissionsScreen() {
   const { user } = useAuth();
 
   const [healthKitStatus, setHealthKitStatus] = useState<PermissionStatus>('not_determined');
-  const [throneStatus, setThroneStatus] = useState<PermissionStatus>('not_determined');
   const [clinicalStatus, setClinicalStatus] = useState<PermissionStatus>('not_determined');
-  const [clinicalAvailable, setClinicalAvailable] = useState(false);
+  const [throneStatus, setThroneStatus] = useState<PermissionStatus>('not_determined');
+  const [smartProviderStatus, setSmartProviderStatus] = useState<PermissionStatus>('not_determined');
   const [isLoading, setIsLoading] = useState(false);
-
+  const [selectedProvider, setSelectedProvider] = useState<SmartHealthSystem | null>(null);
   // Throne User ID modal state
   const [throneModalVisible, setThroneModalVisible] = useState(false);
   const [throneIdInput, setThroneIdInput] = useState('');
@@ -71,14 +74,56 @@ export default function PermissionsScreen() {
       const thronePermission = await ThroneService.getPermissionStatus();
       if (!cancelled) setThroneStatus(thronePermission);
 
-      if (Platform.OS === 'ios') {
-        const available = areClinicalRecordsAvailable();
-        if (!cancelled) setClinicalAvailable(available);
+      const onboardingData = await OnboardingService.getData();
+      if (!cancelled && onboardingData.permissions?.clinicalRecords) {
+        setClinicalStatus(onboardingData.permissions.clinicalRecords);
+      }
+      const providerConnection = onboardingData.providerConnection;
+      if (!cancelled && providerConnection) {
+        setSelectedProvider({
+          id: providerConnection.providerId,
+          name: providerConnection.providerName,
+          issuer: providerConnection.issuer,
+          fhirBaseUrl: providerConnection.fhirBaseUrl,
+          vendor: 'epic',
+          authorizationStyle: 'standalone_patient',
+        });
+        setSmartProviderStatus('granted');
       }
     }
     checkStatus();
     return () => { cancelled = true; };
   }, []);
+
+  // Re-check SMART connection status each time this screen regains focus
+  // (i.e. the participant returns from the smart-connect modal).
+  useFocusEffect(
+    useCallback(() => {
+      let cancelled = false;
+      async function checkProviderConnection() {
+        const uid = getAuth().currentUser?.uid;
+        if (!uid) return;
+        try {
+          const connection = await getConnectedSmartProviderStatus(uid);
+          if (cancelled) return;
+          if (connection) {
+            setSelectedProvider((prev) => prev ?? {
+              id: connection.providerId,
+              name: connection.providerName,
+              issuer: connection.issuer,
+              fhirBaseUrl: connection.fhirBaseUrl,
+              vendor: connection.providerId === 'epic-sandbox' ? 'epic' as const : 'other' as const,
+            });
+            setSmartProviderStatus('granted');
+          }
+        } catch {
+          // Ignore silently — connection status just stays unchanged
+        }
+      }
+      checkProviderConnection();
+      return () => { cancelled = true; };
+    }, []),
+  );
 
   const handleHealthKitRequest = useCallback(async () => {
     if (Platform.OS !== 'ios') {
@@ -106,6 +151,19 @@ export default function PermissionsScreen() {
             { text: 'Open Settings', onPress: () => Linking.openSettings() },
           ]
         );
+      } else if (result.success && result.dataVerified === false) {
+        // Authorization was requested (or was already decided by iOS) but the
+        // test query returned no data.  This most likely means the permission
+        // dialog was previously shown and dismissed/denied — iOS won't show it
+        // again.  Guide the user to Settings to re-enable access.
+        Alert.alert(
+          'Check Health Permissions',
+          'Apple Health was enabled, but no health data was returned. This can happen if the permission dialog was dismissed in a previous session.\n\nTo fix this: go to Settings → Health → Data Access & Devices → StreamSync and turn on all categories.',
+          [
+            { text: 'Later', style: 'cancel' },
+            { text: 'Open Settings', onPress: () => Linking.openSettings() },
+          ]
+        );
       }
     } catch {
       setHealthKitStatus('denied');
@@ -113,24 +171,54 @@ export default function PermissionsScreen() {
     }
   }, []);
 
-  const handleClinicalRequest = useCallback(async () => {
+  const handleClinicalRecordsRequest = useCallback(async () => {
     if (Platform.OS !== 'ios') {
-      setClinicalStatus('granted');
+      setClinicalStatus('skipped');
+      return;
+    }
+
+    if (!areClinicalRecordsAvailable()) {
+      setClinicalStatus('denied');
+      Alert.alert(
+        'Clinical Records Not Available',
+        'Clinical records are not available on this device or Apple Health account.',
+        [{ text: 'OK' }],
+      );
       return;
     }
 
     setClinicalStatus('loading');
+
     try {
       const result = await requestClinicalPermissions();
       setClinicalStatus(result.success ? 'granted' : 'denied');
+
+      if (!result.success) {
+        Alert.alert(
+          'Clinical Records Access',
+          'Clinical records access was not granted. You can enable it later in Settings or continue without it.',
+          [
+            { text: 'Continue', style: 'cancel' },
+            { text: 'Open Settings', onPress: () => Linking.openSettings() },
+          ],
+        );
+      }
     } catch {
       setClinicalStatus('denied');
-      Alert.alert('Error', 'Failed to request clinical records permissions.');
+      Alert.alert('Error', 'Failed to request clinical records permissions. Please try again.');
     }
   }, []);
 
-  const handleClinicalSkip = useCallback(() => {
+  const handleClinicalRecordsSkip = useCallback(() => {
     setClinicalStatus('skipped');
+  }, []);
+
+  const handleSmartProviderRequest = useCallback(() => {
+    router.push('/smart-connect' as Href);
+  }, [router]);
+
+  const handleSmartProviderSkip = useCallback(() => {
+    setSmartProviderStatus('skipped');
   }, []);
 
   // Opens the Throne User ID modal instead of immediately calling the service
@@ -188,6 +276,7 @@ export default function PermissionsScreen() {
           healthKit: healthKitStatus as 'granted' | 'denied' | 'not_determined',
           clinicalRecords: clinicalStatus as 'granted' | 'denied' | 'not_determined' | 'skipped',
           throne: throneStatus as 'granted' | 'denied' | 'not_determined' | 'skipped',
+          smartProvider: smartProviderStatus as 'granted' | 'denied' | 'not_determined' | 'skipped',
         },
       });
       await OnboardingService.goToStep(OnboardingStep.MEDICAL_HISTORY);
@@ -216,6 +305,7 @@ export default function PermissionsScreen() {
 
         <Text style={[styles.description, { color: colors.icon }]}>
           StreamSync needs access to your health data to track your activity, sleep, and symptoms.
+          If you want to import clinical records, connect your health records below.
           Your data is encrypted and only used for research purposes.
         </Text>
 
@@ -227,15 +317,30 @@ export default function PermissionsScreen() {
           onRequest={handleHealthKitRequest}
         />
 
+        {Platform.OS === 'ios' && (
+          <PermissionCard
+            title="Apple Health Clinical Records"
+            description="Import medications, lab results, conditions, procedures, and clinical notes from Apple Health if they are available on your device."
+            icon="cross.case.fill"
+            status={clinicalStatus}
+            onRequest={handleClinicalRecordsRequest}
+            onSkip={handleClinicalRecordsSkip}
+            optional
+          />
+        )}
+
         <PermissionCard
-          title="Clinical Records"
-          description="Import medications, lab results, and conditions from your health records — reducing manual data entry."
-          icon="doc.text.fill"
-          status={clinicalStatus}
-          onRequest={handleClinicalRequest}
-          onSkip={handleClinicalSkip}
+          title="Connect Health Records"
+          description={
+            selectedProvider
+              ? `Connected to ${selectedProvider.name}. Your conditions, medications, and visit notes will be imported to prefill your medical history.`
+              : 'Connect your patient portal to automatically import your medical history, medications, and conditions, reducing manual entry on the next screen.'
+          }
+          icon="building.columns.fill"
+          status={smartProviderStatus}
+          onRequest={handleSmartProviderRequest}
+          onSkip={handleSmartProviderSkip}
           optional
-          comingSoon={!clinicalAvailable}
         />
 
         <PermissionCard
@@ -353,7 +458,6 @@ export default function PermissionsScreen() {
           </KeyboardAvoidingView>
         </Pressable>
       </Modal>
-
     </SafeAreaView>
   );
 }
@@ -466,5 +570,23 @@ const modalStyles = StyleSheet.create({
   },
   cancelText: {
     fontSize: 15,
+  },
+  systemButton: {
+    width: '100%',
+    marginTop: Spacing.sm,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: 14,
+    borderRadius: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  systemTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  systemSubtitle: {
+    marginTop: 4,
+    fontSize: 13,
   },
 });

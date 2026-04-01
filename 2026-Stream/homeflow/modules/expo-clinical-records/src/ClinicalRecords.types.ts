@@ -49,8 +49,39 @@ export interface ClinicalRecordQueryOptions {
   limit?: number;
 }
 
+/** A single CDA document sample returned from HealthKit document queries */
+export interface ClinicalDocumentSample {
+  /** UUID of the HKCDADocumentSample */
+  id: string;
+  /** The HKDocumentType identifier (for now, always CDA) */
+  documentType: string;
+  /** ISO 8601 start date */
+  startDate: string;
+  /** ISO 8601 end date */
+  endDate: string;
+  /** Title extracted by HealthKit from the CDA payload */
+  title?: string | null;
+  /** Patient name extracted by HealthKit from the CDA payload */
+  patientName?: string | null;
+  /** Author extracted by HealthKit from the CDA payload */
+  authorName?: string | null;
+  /** Custodian extracted by HealthKit from the CDA payload */
+  custodianName?: string | null;
+  /** Base64-encoded CDA XML when includeDocumentData is true */
+  documentData?: string | null;
+}
+
 /** Result of a clinical records authorization request */
 export interface ClinicalRecordsAuthResult {
   success: boolean;
   note: string;
+}
+
+export interface ClinicalNoteAccessProbeResult {
+  clinicalNoteCount: number;
+  notesWithInlineAttachmentData: number;
+  notesWithAttachmentUrlOnly: number;
+  notesWithoutAttachment: number;
+  documentSampleCount: number;
+  documentSamplesWithData: number;
 }

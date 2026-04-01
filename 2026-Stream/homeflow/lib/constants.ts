@@ -15,6 +15,7 @@ export const STORAGE_KEYS = {
   CONSENT_GIVEN: '@homeflow_consent_given',
   CONSENT_DATE: '@homeflow_consent_date',
   CONSENT_VERSION: '@homeflow_consent_version',
+  CONSENT_SIGNATURE: '@homeflow_consent_signature',
 
   // Account
   ACCOUNT_PROFILE: '@homeflow_account_profile',
@@ -33,6 +34,7 @@ export const STORAGE_KEYS = {
 
   // Permissions
   PERMISSIONS_STATUS: '@homeflow_permissions_status',
+  SMART_PROVIDER_CONNECTION: '@homeflow_smart_provider_connection',
 
   // Notification tracking (last time we fired each reminder, to avoid spam)
   LAST_NOTIFICATION_HEALTHKIT: '@homeflow_last_notification_healthkit',

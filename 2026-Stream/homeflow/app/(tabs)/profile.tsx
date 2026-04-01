@@ -10,7 +10,8 @@ import {
   Linking,
   Alert,
 } from 'react-native';
-import { useRouter, Href } from 'expo-router';
+import { useRouter, Href, useFocusEffect } from 'expo-router';
+import { useCallback } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { useAuth } from '@/hooks/use-auth';
@@ -18,8 +19,10 @@ import {
   DATA_PERMISSIONS_SUMMARY,
   STUDY_COORDINATOR,
 } from '@/lib/consent/consent-document';
+import { getConnectedSmartProviderStatus } from '@/lib/services/smart';
 import { useAppTheme, type AppearanceMode } from '@/lib/theme/ThemeContext';
 import { FontSize, FontWeight } from '@/lib/theme/typography';
+import { getAuth } from '@/src/services/firestore';
 
 const APPEARANCE_OPTIONS: { value: AppearanceMode; label: string }[] = [
   { value: 'light', label: 'Light' },
@@ -32,6 +35,41 @@ export default function ProfileScreen() {
   const router = useRouter();
   const { user, signOut } = useAuth();
   const [showPermissionsModal, setShowPermissionsModal] = useState(false);
+  const [providerConnected, setProviderConnected] = useState(false);
+  const [providerName, setProviderName] = useState<string | null>(null);
+  const [providerTotalRecordCount, setProviderTotalRecordCount] = useState<number | null>(null);
+  const [providerLastSynced, setProviderLastSynced] = useState<Date | null>(null);
+
+  // Refresh SMART connection status each time the profile tab comes into focus
+  // (e.g. user just connected from the smart-connect modal).
+  useFocusEffect(
+    useCallback(() => {
+      let cancelled = false;
+      async function checkProviderConnection() {
+        const uid = getAuth().currentUser?.uid;
+        if (!uid) return;
+        try {
+          const connection = await getConnectedSmartProviderStatus(uid);
+          if (cancelled) return;
+          if (connection) {
+            setProviderConnected(true);
+            setProviderName(connection.providerName);
+            setProviderTotalRecordCount(connection.totalRecordCount);
+            setProviderLastSynced(connection.lastSyncedAt ? new Date(connection.lastSyncedAt) : null);
+          } else {
+            setProviderConnected(false);
+            setProviderName(null);
+            setProviderTotalRecordCount(null);
+            setProviderLastSynced(null);
+          }
+        } catch {
+          // Silently ignore — user just sees "Not connected"
+        }
+      }
+      checkProviderConnection();
+      return () => { cancelled = true; };
+    }, []),
+  );
 
   const handleSignOut = () => {
     Alert.alert('Sign Out', 'Are you sure you want to sign out?', [
@@ -149,6 +187,56 @@ export default function ProfileScreen() {
             </View>
             <IconSymbol name="chevron.right" size={14} color={c.textTertiary} />
           </TouchableOpacity>
+        </View>
+
+        {/* 3b. Health Records */}
+        <View style={[styles.card, { backgroundColor: c.card }]}>
+          <TouchableOpacity
+            style={styles.rowButton}
+            onPress={() => router.push('/smart-connect' as Href)}
+            activeOpacity={0.7}
+          >
+            <View style={styles.rowLeft}>
+              <IconSymbol name="doc.text.fill" size={18} color={c.accent} />
+              <View>
+                <Text style={[styles.rowLabel, { color: c.textPrimary }]}>
+                  Health Records
+                </Text>
+                <Text style={[styles.rowSublabel, { color: c.textTertiary }]}>
+                  {providerConnected
+                    ? `Connected${providerName ? ` · ${providerName}` : ''}`
+                    : 'Not connected — tap to set up'}
+                </Text>
+              </View>
+            </View>
+            <IconSymbol name="chevron.right" size={14} color={c.textTertiary} />
+          </TouchableOpacity>
+
+          {providerConnected && (
+            <>
+              <View style={[styles.rowDivider, { backgroundColor: c.separator }]} />
+              <TouchableOpacity
+                style={styles.rowButton}
+                onPress={() => router.push('/smart-connect' as Href)}
+                activeOpacity={0.7}
+              >
+                <View style={styles.rowLeft}>
+                  <IconSymbol name="doc.text.fill" size={18} color={c.textSecondary} />
+                  <View>
+                    <Text style={[styles.rowLabel, { color: c.textSecondary }]}>
+                      Sync Records
+                    </Text>
+                    <Text style={[styles.rowSublabel, { color: c.textTertiary }]}>
+                      {providerLastSynced
+                        ? `Last synced ${providerLastSynced.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}${providerTotalRecordCount !== null ? ` · ${providerTotalRecordCount} record${providerTotalRecordCount === 1 ? '' : 's'}` : ''}`
+                        : providerTotalRecordCount !== null ? `${providerTotalRecordCount} record${providerTotalRecordCount === 1 ? '' : 's'} imported` : 'Re-authenticate to pull fresh records'}
+                    </Text>
+                  </View>
+                </View>
+                <IconSymbol name="chevron.right" size={14} color={c.textTertiary} />
+              </TouchableOpacity>
+            </>
+          )}
         </View>
 
         {/* 4. Contact / Support */}
@@ -370,6 +458,10 @@ const styles = StyleSheet.create({
   rowLabel: {
     fontSize: FontSize.headline,
     fontWeight: FontWeight.regular,
+  },
+  rowSublabel: {
+    fontSize: FontSize.footnote,
+    marginTop: 2,
   },
   rowDivider: {
     height: StyleSheet.hairlineWidth,

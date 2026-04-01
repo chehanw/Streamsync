@@ -1,0 +1,26 @@
+[debug] [2026-03-28T07:53:15.505Z] ----------------------------------------------------------------------
+[debug] [2026-03-28T07:53:15.507Z] Command:       /usr/bin/node /sessions/inspiring-blissful-cray/mnt/Streamsync/node_modules/.bin/firebase --project streamsync-8ae79 functions:log
+[debug] [2026-03-28T07:53:15.507Z] CLI Version:   15.11.0
+[debug] [2026-03-28T07:53:15.507Z] Platform:      linux
+[debug] [2026-03-28T07:53:15.508Z] Node Version:  v22.22.0
+[debug] [2026-03-28T07:53:15.508Z] Time:          Sat Mar 28 2026 03:53:15 GMT-0400 (Eastern Daylight Time)
+[debug] [2026-03-28T07:53:15.508Z] ----------------------------------------------------------------------
+[debug] 
+[debug] [2026-03-28T07:53:15.511Z] >>> [apiv2][query] GET https://firebase-public.firebaseio.com/cli.json [none]
+[debug] [2026-03-28T07:53:15.981Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2026-03-28T07:53:16.008Z] <<< [apiv2][status] GET https://firebase-public.firebaseio.com/cli.json 403
+[debug] [2026-03-28T07:53:16.008Z] <<< [apiv2][body] GET https://firebase-public.firebaseio.com/cli.json "Connection blocked by network allowlist"
+[warn] ⚠  Unable to fetch the CLI MOTD and remote config. This is not a fatal error, but may indicate an issue with your network connection. 
+[debug] [2026-03-28T07:53:16.009Z] Failed to fetch MOTD FirebaseError: Unable to parse JSON: SyntaxError: Unexpected token 'C', "Connection"... is not valid JSON
+[debug] [2026-03-28T07:53:16.013Z] Error: Could not load the default credentials. Browse to https://cloud.google.com/docs/authentication/getting-started for more information.
+    at GoogleAuth.getApplicationDefaultAsync (/sessions/inspiring-blissful-cray/mnt/Streamsync/node_modules/google-auth-library/build/src/auth/googleauth.js:287:15)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async GoogleAuth._GoogleAuth_determineClient (/sessions/inspiring-blissful-cray/mnt/Streamsync/node_modules/google-auth-library/build/src/auth/googleauth.js:834:32)
+    at async GoogleAuth.getClient (/sessions/inspiring-blissful-cray/mnt/Streamsync/node_modules/google-auth-library/build/src/auth/googleauth.js:698:20)
+    at async GoogleAuth.getAccessToken (/sessions/inspiring-blissful-cray/mnt/Streamsync/node_modules/google-auth-library/build/src/auth/googleauth.js:722:24)
+    at async autoAuth (/sessions/inspiring-blissful-cray/mnt/Streamsync/node_modules/firebase-tools/lib/requireAuth.js:28:19)
+    at async requireAuth (/sessions/inspiring-blissful-cray/mnt/Streamsync/node_modules/firebase-tools/lib/requireAuth.js:90:20)
+    at async Object.requirePermissions [as fn] (/sessions/inspiring-blissful-cray/mnt/Streamsync/node_modules/firebase-tools/lib/requirePermissions.js:17:5)
+    at async /sessions/inspiring-blissful-cray/mnt/Streamsync/node_modules/firebase-tools/lib/command.js:264:17
+[error] 
+[error] Error: Failed to authenticate, have you run firebase login?

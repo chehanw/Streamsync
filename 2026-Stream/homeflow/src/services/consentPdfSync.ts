@@ -17,8 +17,9 @@
 
 import * as Print from 'expo-print';
 import { getApp } from 'firebase/app';
-import { getStorage, ref, uploadBytes } from 'firebase/storage';
-import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { Share, Linking } from 'react-native';
 
 import { CONSENT_DOCUMENT } from '@/lib/consent/consent-document';
 import { db, getAuth } from './firestore';
@@ -27,18 +28,30 @@ import { db, getAuth } from './firestore';
 
 export interface ConsentSignatureData {
   signatureType: 'typed' | 'drawn';
-  /** Full name typed by the participant, or null if they drew their signature. */
-  participantName: string | null;
-  /** The raw value passed to ConsentService.recordConsent — typed name or marker string. */
+  /** Full name typed by the participant. */
+  participantName: string;
+  /** The typed signature value or a marker for a drawn signature. */
   signatureValue: string;
   /** ISO string of when the participant actually signed (may differ from upload time). */
   consentDate?: string;
+  /** Inline SVG markup of the drawn signature when signatureType === 'drawn'. */
+  drawnSignatureSvg?: string | null;
 }
 
 export interface ConsentPdfResult {
   ok: boolean;
   storagePath?: string;
+  downloadUrl?: string;
   error?: string;
+}
+
+export interface SavedConsentPdfMetadata {
+  storagePath: string;
+  signatureType: 'typed' | 'drawn';
+  participantName: string;
+  consentTimestamp: string;
+  consentDateLabel?: string;
+  consentTimeLabel?: string;
 }
 
 // ── HTML builder ──────────────────────────────────────────────────────────────
@@ -46,6 +59,7 @@ export interface ConsentPdfResult {
 function buildConsentHtml(
   signature: ConsentSignatureData,
   consentDate: string,
+  consentTime: string,
 ): string {
   const sectionHtml = CONSENT_DOCUMENT.sections
     .map(
@@ -60,9 +74,9 @@ function buildConsentHtml(
     .join('');
 
   const signatureBlock =
-    signature.signatureType === 'typed' && signature.participantName
-      ? `<span class="sig-name">${signature.participantName}</span>`
-      : `<span class="sig-drawn">[Drawn signature provided]</span>`;
+    signature.signatureType === 'drawn' && signature.drawnSignatureSvg
+      ? `<div class="sig-drawn-wrap">${signature.drawnSignatureSvg}</div>`
+      : `<span class="sig-name">${signature.signatureValue}</span>`;
 
   return `<!DOCTYPE html>
 <html>
@@ -80,7 +94,8 @@ function buildConsentHtml(
     .sig-block { margin-top: 36px; padding-top: 20px; border-top: 2px solid #1a1a1a; }
     .sig-label { font-size: 11px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px; color: #555; margin-bottom: 10px; }
     .sig-name { font-size: 22px; font-style: italic; font-family: Georgia, serif; }
-    .sig-drawn { font-size: 14px; color: #555; font-style: italic; }
+    .sig-drawn-wrap { width: 240px; height: 100px; }
+    .sig-drawn-wrap svg { width: 240px; height: 100px; display: block; }
     .sig-meta { font-size: 11px; color: #777; margin-top: 10px; }
   </style>
 </head>
@@ -100,10 +115,75 @@ function buildConsentHtml(
     <div class="sig-label">Participant Signature</div>
     <div>${signatureBlock}</div>
     <div class="sig-meta">Date signed: ${consentDate}</div>
-    ${signature.participantName ? `<div class="sig-meta">Name: ${signature.participantName}</div>` : ''}
+    <div class="sig-meta">Time signed: ${consentTime}</div>
+    <div class="sig-meta">Name: ${signature.participantName}</div>
   </div>
 </body>
 </html>`;
+}
+
+async function getSavedConsentPdfMetadata(
+  uid: string,
+): Promise<SavedConsentPdfMetadata | null> {
+  const snapshot = await getDoc(doc(db, `users/${uid}/consent_response/current`));
+  if (!snapshot.exists()) {
+    return null;
+  }
+
+  const data = snapshot.data() as Partial<SavedConsentPdfMetadata> & {
+    storagePath?: string;
+  };
+  if (!data.storagePath || !data.participantName || !data.signatureType || !data.consentTimestamp) {
+    return null;
+  }
+
+  return {
+    storagePath: data.storagePath,
+    signatureType: data.signatureType,
+    participantName: data.participantName,
+    consentTimestamp: data.consentTimestamp,
+    consentDateLabel: data.consentDateLabel,
+    consentTimeLabel: data.consentTimeLabel,
+  };
+}
+
+export async function getSavedConsentPdfDownloadUrl(): Promise<string | null> {
+  const uid = getAuth().currentUser?.uid;
+  if (!uid) {
+    return null;
+  }
+
+  const metadata = await getSavedConsentPdfMetadata(uid);
+  if (!metadata) {
+    return null;
+  }
+
+  return getDownloadURL(ref(getStorage(getApp()), metadata.storagePath));
+}
+
+export async function shareSavedConsentPdf(): Promise<boolean> {
+  const downloadUrl = await getSavedConsentPdfDownloadUrl();
+  if (!downloadUrl) {
+    return false;
+  }
+
+  await Share.share({
+    title: `${CONSENT_DOCUMENT.title} – ${CONSENT_DOCUMENT.studyName}`,
+    url: downloadUrl,
+    message: `Signed consent form for ${CONSENT_DOCUMENT.studyName}`,
+  });
+
+  return true;
+}
+
+export async function openSavedConsentPdf(): Promise<boolean> {
+  const downloadUrl = await getSavedConsentPdfDownloadUrl();
+  if (!downloadUrl) {
+    return false;
+  }
+
+  await Linking.openURL(downloadUrl);
+  return true;
 }
 
 // ── uploadConsentPdf ──────────────────────────────────────────────────────────
@@ -130,12 +210,16 @@ export async function uploadConsentPdf(
     month: 'long',
     day: 'numeric',
   });
+  const consentTime = signedAt.toLocaleTimeString('en-US', {
+    hour: 'numeric',
+    minute: '2-digit',
+  });
   const timestamp = now.toISOString().replace(/[:.]/g, '-');
   const storagePath = `users/${uid}/consent_pdfs/consent_v${CONSENT_DOCUMENT.version}_${timestamp}.pdf`;
 
   try {
     // 1. Render HTML → local PDF file (no base64 — avoids RN ArrayBuffer/Blob issue)
-    const html = buildConsentHtml(signature, consentDate);
+    const html = buildConsentHtml(signature, consentDate, consentTime);
     const { uri } = await Print.printToFileAsync({ html });
 
     // 2. Read the local file as a React Native Blob via fetch.
@@ -153,12 +237,15 @@ export async function uploadConsentPdf(
         uid,
         consentVersion: CONSENT_DOCUMENT.version,
         signatureType: signature.signatureType,
-        participantName: signature.participantName ?? '',
+        participantName: signature.participantName,
         consentDate,
+        consentTime,
       },
     });
 
     console.log(`[ConsentPdf] Uploaded ${storagePath}`);
+
+    const downloadUrl = await getDownloadURL(storageRef);
 
     // 3. Write metadata to Firestore (users/{uid}/consent_response/current)
     await setDoc(
@@ -167,17 +254,21 @@ export async function uploadConsentPdf(
         given: true,
         version: CONSENT_DOCUMENT.version,
         signatureType: signature.signatureType,
-        participantName: signature.participantName ?? null,
+        participantName: signature.participantName,
+        signatureValue: signature.signatureValue,
         studyName: CONSENT_DOCUMENT.studyName,
         irbProtocol: CONSENT_DOCUMENT.irbProtocol,
         storagePath,
-        consentTimestamp: now.toISOString(),
+        downloadUrl,
+        consentTimestamp: signedAt.toISOString(),
+        consentDateLabel: consentDate,
+        consentTimeLabel: consentTime,
         recordedAt: serverTimestamp(),
       },
       { merge: false },
     );
 
-    return { ok: true, storagePath };
+    return { ok: true, storagePath, downloadUrl };
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     console.error('[ConsentPdf] upload error:', message);

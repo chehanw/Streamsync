@@ -57,11 +57,21 @@ service cloud.firestore {
       // Owner reads their own profile; researchers read any profile.
       allow read: if isOwner(uid) || isResearcher();
 
-      // Only allow writing the Throne device-link fields to the root profile
-      // document. All other app data lives in named subcollections below.
-      // Researchers cannot overwrite patient profile documents.
+      // Only allow writing a narrow set of patient-owned profile fields to the
+      // root profile document. Researchers cannot overwrite patient profiles.
       allow write: if isOwner(uid)
-        && request.resource.data.keys().hasOnly(['throneUserId', 'throneUserIdSetAt']);
+        && request.resource.data.keys().hasOnly([
+          'throneUserId',
+          'throneUserIdSetAt',
+          'name',
+          'displayName',
+          'firstName',
+          'lastName',
+          'email',
+          'phoneNumber',
+          'updatedAt',
+          'createdAt'
+        ]);
 
       // ── Throne data (written by Cloud Function, read by owner + researcher) ─
       // Demo account (CUziuLyPtDNO2IvSbsifXPKrNEk2) is readable by any
@@ -121,11 +131,26 @@ service cloud.firestore {
 
       match /clinical_notes/{noteId} {
         allow read:  if isOwner(uid) || isResearcher();
-        allow write: if isOwner(uid);
+        allow write: if false; // Cloud Function (Admin SDK) only
+      }
+
+      match /smart_clinical_data/{providerId} {
+        allow read:  if isOwner(uid) || isResearcher();
+        allow write: if false; // Cloud Function (Admin SDK) only
       }
 
       match /medical_history_prefill/{docId} {
-        allow read, write: if isOwner(uid);
+        allow read: if isOwner(uid) || isResearcher();
+        allow write: if isOwner(uid);
+      }
+
+      match /provider_connections/{providerId} {
+        allow read:  if isOwner(uid) || isResearcher();
+        allow write: if false; // Cloud Function (Admin SDK) only
+      }
+
+      match /provider_connections_private/{providerId} {
+        allow read, write: if false; // Admin SDK only
       }
 
       match /medical_history/{docId} {

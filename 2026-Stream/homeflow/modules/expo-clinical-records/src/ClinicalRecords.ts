@@ -10,6 +10,7 @@ import { Platform } from 'react-native';
 import ExpoClinicalRecords from './ExpoClinicalRecords';
 import type {
   ClinicalRecord,
+  ClinicalDocumentSample,
   ClinicalRecordQueryOptions,
   ClinicalRecordsAuthResult,
 } from './ClinicalRecords.types';
@@ -81,6 +82,23 @@ export function getSupportedTypes(): string[] {
   }
   try {
     return ExpoClinicalRecords.getSupportedTypes();
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Query CDA document samples from HealthKit.
+ * Returns an empty array if not available or on error.
+ */
+export async function getClinicalDocumentSamples(
+  options?: ClinicalRecordQueryOptions,
+): Promise<ClinicalDocumentSample[]> {
+  if (Platform.OS !== 'ios' || !ExpoClinicalRecords) {
+    return [];
+  }
+  try {
+    return await ExpoClinicalRecords.getDocumentSamples(options ?? null);
   } catch {
     return [];
   }

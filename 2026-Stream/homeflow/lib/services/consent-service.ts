@@ -34,12 +34,14 @@ class ConsentServiceImpl {
       const given = await AsyncStorage.getItem(STORAGE_KEYS.CONSENT_GIVEN);
       const date = await AsyncStorage.getItem(STORAGE_KEYS.CONSENT_DATE);
       const version = await AsyncStorage.getItem(STORAGE_KEYS.CONSENT_VERSION);
+      const signature = await AsyncStorage.getItem(STORAGE_KEYS.CONSENT_SIGNATURE);
 
       if (given === 'true' && date && version) {
         this.consentRecord = {
           given: true,
           version,
           timestamp: date,
+          participantSignature: signature || undefined,
           studyName: STUDY_INFO.name,
           irbProtocol: STUDY_INFO.irbProtocol,
         };
@@ -88,6 +90,11 @@ class ConsentServiceImpl {
     await AsyncStorage.setItem(STORAGE_KEYS.CONSENT_GIVEN, 'true');
     await AsyncStorage.setItem(STORAGE_KEYS.CONSENT_DATE, now);
     await AsyncStorage.setItem(STORAGE_KEYS.CONSENT_VERSION, CONSENT_VERSION);
+    if (signature) {
+      await AsyncStorage.setItem(STORAGE_KEYS.CONSENT_SIGNATURE, signature);
+    } else {
+      await AsyncStorage.removeItem(STORAGE_KEYS.CONSENT_SIGNATURE);
+    }
   }
 
   /**
@@ -100,6 +107,7 @@ class ConsentServiceImpl {
       STORAGE_KEYS.CONSENT_GIVEN,
       STORAGE_KEYS.CONSENT_DATE,
       STORAGE_KEYS.CONSENT_VERSION,
+      STORAGE_KEYS.CONSENT_SIGNATURE,
     ]);
   }
 

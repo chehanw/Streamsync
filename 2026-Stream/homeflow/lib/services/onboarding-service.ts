@@ -45,14 +45,24 @@ export interface OnboardingData {
     healthKit: 'granted' | 'denied' | 'not_determined';
     clinicalRecords: 'granted' | 'denied' | 'not_determined' | 'skipped';
     throne: 'granted' | 'denied' | 'not_determined' | 'skipped';
+    smartProvider: 'granted' | 'denied' | 'not_determined' | 'skipped';
+  };
+
+  providerConnection?: {
+    providerId: string;
+    providerName: string;
+    issuer: string;
+    fhirBaseUrl: string;
+    connectedAt?: string | null;
   };
 
   // Consent PDF — stored pre-auth, uploaded to Firebase Storage after sign-in
   pendingConsentPdf?: {
     signatureType: 'typed' | 'drawn';
-    participantName: string | null;
+    participantName: string;
     signatureValue: string;
     consentDate: string; // ISO string
+    drawnSignatureSvg?: string | null;
   };
 
   // IPSS baseline score
@@ -252,10 +262,12 @@ class OnboardingServiceImpl {
       STORAGE_KEYS.CONSENT_GIVEN,
       STORAGE_KEYS.CONSENT_DATE,
       STORAGE_KEYS.CONSENT_VERSION,
+      STORAGE_KEYS.CONSENT_SIGNATURE,
       STORAGE_KEYS.MEDICAL_HISTORY,
       STORAGE_KEYS.ELIGIBILITY_RESPONSES,
       STORAGE_KEYS.IPSS_BASELINE,
       STORAGE_KEYS.PERMISSIONS_STATUS,
+      STORAGE_KEYS.SMART_PROVIDER_CONNECTION,
     ]);
   }
 

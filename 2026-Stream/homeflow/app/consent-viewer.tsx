@@ -12,6 +12,7 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
+  Alert,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -20,11 +21,49 @@ import { IconSymbol } from '@/components/ui/icon-symbol';
 import { useAppTheme } from '@/lib/theme/ThemeContext';
 import { FontSize, FontWeight, LineHeight } from '@/lib/theme/typography';
 import { StanfordColors } from '@/constants/theme';
+import {
+  openSavedConsentPdf,
+  shareSavedConsentPdf,
+} from '@/src/services/consentPdfSync';
 
 export default function ConsentViewerScreen() {
   const { theme } = useAppTheme();
   const { colors: c } = theme;
   const router = useRouter();
+
+  const handleOpenSavedCopy = async () => {
+    try {
+      const opened = await openSavedConsentPdf();
+      if (!opened) {
+        Alert.alert(
+          'Signed Copy Not Available',
+          'No saved signed consent form was found for this account yet.',
+        );
+      }
+    } catch {
+      Alert.alert(
+        'Unable to Open Copy',
+        'The saved signed consent form could not be opened right now.',
+      );
+    }
+  };
+
+  const handleShareSavedCopy = async () => {
+    try {
+      const shared = await shareSavedConsentPdf();
+      if (!shared) {
+        Alert.alert(
+          'Signed Copy Not Available',
+          'No saved signed consent form was found for this account yet.',
+        );
+      }
+    } catch {
+      Alert.alert(
+        'Unable to Share Copy',
+        'The saved signed consent form could not be shared right now.',
+      );
+    }
+  };
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: c.background }]} edges={['top']}>
@@ -50,6 +89,37 @@ export default function ConsentViewerScreen() {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
+        <View style={[styles.actionsCard, { backgroundColor: c.card }]}>
+          <Text style={[styles.actionsTitle, { color: c.textPrimary }]}>
+            Signed Consent Copy
+          </Text>
+          <Text style={[styles.actionsSubtitle, { color: c.textSecondary }]}>
+            Download or share the signed and dated consent form saved for this account.
+          </Text>
+          <View style={styles.actionsRow}>
+            <TouchableOpacity
+              style={[styles.actionButton, { backgroundColor: c.secondaryFill }]}
+              onPress={handleOpenSavedCopy}
+              activeOpacity={0.7}
+            >
+              <IconSymbol name="arrow.down.doc.fill" size={16} color={StanfordColors.cardinal} />
+              <Text style={[styles.actionButtonText, { color: c.textPrimary }]}>
+                Download
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.actionButton, { backgroundColor: c.secondaryFill }]}
+              onPress={handleShareSavedCopy}
+              activeOpacity={0.7}
+            >
+              <IconSymbol name="square.and.arrow.up.fill" size={16} color={StanfordColors.cardinal} />
+              <Text style={[styles.actionButtonText, { color: c.textPrimary }]}>
+                Share
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
         {/* Study metadata card */}
         <View style={[styles.metaCard, { backgroundColor: c.card }]}>
           <View style={styles.metaHeader}>
@@ -149,6 +219,37 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 16,
     overflow: 'hidden',
+  },
+  actionsCard: {
+    borderRadius: 12,
+    padding: 16,
+    gap: 10,
+  },
+  actionsTitle: {
+    fontSize: FontSize.subhead,
+    fontWeight: FontWeight.semibold,
+  },
+  actionsSubtitle: {
+    fontSize: FontSize.footnote,
+    lineHeight: LineHeight.footnote,
+  },
+  actionsRow: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  actionButton: {
+    flex: 1,
+    borderRadius: 10,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  actionButtonText: {
+    fontSize: FontSize.footnote,
+    fontWeight: FontWeight.medium,
   },
   metaHeader: {
     flexDirection: 'row',

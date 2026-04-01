@@ -5,7 +5,7 @@
  * In dev mode, a skip button allows bypassing auth for faster iteration.
  */
 
-import React, { useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -22,7 +22,6 @@ import {
 } from 'react-native';
 import { useRouter, Href } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import * as AppleAuthentication from 'expo-apple-authentication';
 import { Colors, StanfordColors, Spacing } from '@/constants/theme';
 import { OnboardingStep } from '@/lib/constants';
 import { OnboardingService } from '@/lib/services/onboarding-service';
@@ -32,14 +31,13 @@ import { getAuth } from '@/src/services/firestore';
 import { uploadConsentPdf } from '@/src/services/consentPdfSync';
 import {
   OnboardingProgressBar,
-  ContinueButton,
 } from '@/components/onboarding';
 
 export default function AccountScreen() {
   const router = useRouter();
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? 'light'];
-  const { signInWithEmail, signUpWithEmail, signInWithApple, signInWithGoogle, signOut, isAuthenticated, user } = useAuth();
+  const { signInWithEmail, signUpWithEmail, signInWithGoogle, isAuthenticated } = useAuth();
 
   const [mode, setMode] = useState<'login' | 'signup'>('signup');
   const [email, setEmail] = useState('');
@@ -47,42 +45,59 @@ export default function AccountScreen() {
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [loading, setLoading] = useState(false);
+  const advancingRef = useRef(false);
 
-  // If already signed in, show a "continue / switch account" prompt rather than
-  // silently skipping — this handles the onboarding-reset-while-logged-in case.
+  const handleAdvance = useCallback(async () => {
+    if (advancingRef.current) return;
+    advancingRef.current = true;
 
-  const handleAdvance = async () => {
     const uid = getAuth().currentUser?.uid;
-    if (uid) {
-      const data = await OnboardingService.getData();
+    try {
+      if (uid) {
+        const data = await OnboardingService.getData();
 
-      // Flush surgery date collected pre-login
-      const surgeryDate = data.eligibility?.surgeryDate;
-      if (surgeryDate) {
-        saveSurgeryDate(uid, surgeryDate).catch((err) => {
-          console.warn('[Account] Failed to flush surgery date to Firestore:', err);
-        });
+        // Flush surgery date collected pre-login
+        const surgeryDate = data.eligibility?.surgeryDate;
+        if (surgeryDate) {
+          saveSurgeryDate(uid, surgeryDate).catch((err) => {
+            console.warn('[Account] Failed to flush surgery date to Firestore:', err);
+          });
+        }
+
+        // Upload consent PDF now that we have a UID
+        const pending = data.pendingConsentPdf;
+        if (pending) {
+          uploadConsentPdf({
+            signatureType: pending.signatureType,
+            participantName: pending.participantName,
+            signatureValue: pending.signatureValue,
+            consentDate: pending.consentDate,
+            drawnSignatureSvg: pending.drawnSignatureSvg,
+          }).then((result) => {
+            if (!result.ok) {
+              console.warn('[Account] Consent PDF upload failed (non-fatal):', result.error);
+              return;
+            }
+            OnboardingService.updateData({ pendingConsentPdf: undefined }).catch((err) => {
+              console.warn('[Account] Failed to clear pending consent PDF state:', err);
+            });
+          });
+        }
       }
 
-      // Upload consent PDF now that we have a UID
-      const pending = data.pendingConsentPdf;
-      if (pending) {
-        uploadConsentPdf({
-          signatureType: pending.signatureType,
-          participantName: pending.participantName,
-          signatureValue: pending.signatureValue,
-          consentDate: pending.consentDate,
-        }).then((result) => {
-          if (!result.ok) {
-            console.warn('[Account] Consent PDF upload failed (non-fatal):', result.error);
-          }
-        });
-      }
+      await OnboardingService.goToStep(OnboardingStep.PERMISSIONS);
+      router.push('/(onboarding)/permissions' as Href);
+    } catch (error) {
+      advancingRef.current = false;
+      throw error;
     }
+  }, [router]);
 
-    await OnboardingService.goToStep(OnboardingStep.PERMISSIONS);
-    router.push('/(onboarding)/permissions' as Href);
-  };
+  useEffect(() => {
+    if (isAuthenticated) {
+      void handleAdvance();
+    }
+  }, [handleAdvance, isAuthenticated]);
 
   const handleEmailAuth = async () => {
     const trimmedEmail = email.trim();
@@ -122,34 +137,28 @@ export default function AccountScreen() {
       } else {
         await signInWithEmail(trimmedEmail, password);
       }
+      await handleAdvance();
     } catch (error: any) {
       const code = error?.code ?? '';
+      const rawMessage = error?.message ?? '';
+      console.error('[Account] Email auth failed:', { mode, code, rawMessage });
       const message =
         code === 'auth/invalid-credential' || code === 'auth/wrong-password' || code === 'auth/user-not-found'
           ? 'Invalid email or password.'
           : code === 'auth/email-already-in-use'
           ? 'An account with this email already exists. Try signing in.'
+          : code === 'auth/operation-not-allowed'
+          ? 'Email/password authentication is not enabled for this Firebase project.'
           : code === 'auth/too-many-requests'
           ? 'Too many attempts. Please try again later.'
           : code === 'auth/weak-password'
           ? 'Password must be at least 8 characters.'
+          : code === 'auth/invalid-email'
+          ? 'Please enter a valid email address.'
           : code === 'auth/network-request-failed'
           ? 'Network error. Check your connection and try again.'
-          : 'Authentication failed. Please try again.';
+          : rawMessage || 'Authentication failed. Please try again.';
       Alert.alert('Error', message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleAppleLogin = async () => {
-    setLoading(true);
-    try {
-      await signInWithApple();
-    } catch (error: any) {
-      if (error?.code !== 'ERR_REQUEST_CANCELED') {
-        Alert.alert('Apple Sign In Failed', error?.message || 'Please try again.');
-      }
     } finally {
       setLoading(false);
     }
@@ -159,6 +168,7 @@ export default function AccountScreen() {
     setLoading(true);
     try {
       await signInWithGoogle();
+      await handleAdvance();
     } catch (error: any) {
       if (error?.code !== 'SIGN_IN_CANCELLED') {
         Alert.alert('Google Sign In Failed', error?.message || 'Please try again.');
@@ -166,11 +176,6 @@ export default function AccountScreen() {
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleDevSkip = async () => {
-    await OnboardingService.goToStep(OnboardingStep.PERMISSIONS);
-    router.push('/(onboarding)/permissions' as Href);
   };
 
   return (
@@ -195,29 +200,6 @@ export default function AccountScreen() {
                 : 'Sign in to continue to StreamSync.'}
             </Text>
           </View>
-
-          {/* Already signed in — let user continue or switch accounts */}
-          {isAuthenticated && (
-            <View style={[styles.alreadySignedIn, { borderColor: StanfordColors.cardinal }]}>
-              <Text style={[styles.alreadySignedInText, { color: colors.text }]}>
-                Signed in as {user?.email ?? 'your account'}
-              </Text>
-              <View style={styles.alreadySignedInButtons}>
-                <TouchableOpacity
-                  style={[styles.continueAsButton, { backgroundColor: StanfordColors.cardinal }]}
-                  onPress={handleAdvance}
-                >
-                  <Text style={styles.continueAsButtonText}>Continue</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.switchButton, { borderColor: colors.border }]}
-                  onPress={async () => { await signOut(); }}
-                >
-                  <Text style={[styles.switchButtonText, { color: colors.icon }]}>Switch Account</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          )}
 
           <View style={styles.form}>
             {mode === 'signup' && (
@@ -289,20 +271,6 @@ export default function AccountScreen() {
           </View>
 
           <View style={styles.socialButtons}>
-            {Platform.OS === 'ios' && (
-              <AppleAuthentication.AppleAuthenticationButton
-                buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN}
-                buttonStyle={
-                  colorScheme === 'dark'
-                    ? AppleAuthentication.AppleAuthenticationButtonStyle.WHITE
-                    : AppleAuthentication.AppleAuthenticationButtonStyle.BLACK
-                }
-                cornerRadius={12}
-                style={styles.appleButton}
-                onPress={handleAppleLogin}
-              />
-            )}
-
             <TouchableOpacity
               style={[styles.socialButton, { borderColor: colors.border }]}
               onPress={handleGoogleLogin}
@@ -398,19 +366,21 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginVertical: Spacing.lg,
+    gap: Spacing.sm,
   },
   dividerLine: {
     flex: 1,
     height: 1,
   },
   dividerText: {
-    marginHorizontal: Spacing.md,
     fontSize: 14,
+    textTransform: 'uppercase',
   },
   socialButtons: {
-    gap: Spacing.sm,
+    gap: Spacing.md,
   },
   appleButton: {
+    width: '100%',
     height: 52,
   },
   socialButton: {
@@ -418,17 +388,19 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderRadius: 12,
     flexDirection: 'row',
-    justifyContent: 'center',
     alignItems: 'center',
-    gap: 10,
+    justifyContent: 'center',
+    gap: 12,
+    paddingHorizontal: 16,
   },
   googleLogo: {
-    width: 20,
-    height: 20,
+    width: 18,
+    height: 18,
+    resizeMode: 'contain',
   },
   socialButtonText: {
-    fontSize: 17,
-    fontWeight: '500',
+    fontSize: 16,
+    fontWeight: '600',
   },
   alreadySignedIn: {
     borderWidth: 1,

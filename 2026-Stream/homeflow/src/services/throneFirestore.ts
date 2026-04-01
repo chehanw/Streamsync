@@ -156,6 +156,39 @@ export async function saveThroneUserId(uid: string, throneUserId: string): Promi
   );
 }
 
+export interface UserProfileDocument {
+  name?: string;
+  displayName?: string;
+  firstName?: string;
+  lastName?: string;
+  email?: string;
+  phoneNumber?: string;
+  updatedAt?: string;
+  createdAt?: string;
+}
+
+/**
+ * Persist app-collected profile fields to the root users/{uid} document.
+ */
+export async function saveUserProfile(uid: string, profile: UserProfileDocument): Promise<void> {
+  const payload = Object.fromEntries(
+    Object.entries({
+      ...profile,
+      updatedAt: profile.updatedAt ?? new Date().toISOString(),
+    }).filter(([, value]) => value !== undefined),
+  );
+
+  if (Object.keys(payload).length === 0) {
+    return;
+  }
+
+  await setDoc(
+    doc(db, `users/${uid}`),
+    payload,
+    { merge: true },
+  );
+}
+
 /**
  * Persist surgery date to users/{uid}/surgery_date/current.
  */
@@ -236,5 +269,55 @@ export async function saveMedicalHistory(
     doc(db, `users/${uid}/medical_history/current`),
     { ...data, savedAt: serverTimestamp() },
     { merge: false },
+  );
+}
+
+export interface ConfirmedDemographicsPrefillInput {
+  fullName: string;
+  age: number | null;
+  biologicalSex: string | null;
+  ethnicity: string;
+  race: string;
+}
+
+/**
+ * Merge user-confirmed demographics into medical_history_prefill/latest so the
+ * dashboard and downstream workflows can access the same confirmed values.
+ */
+export async function saveConfirmedDemographicsPrefill(
+  uid: string,
+  demographics: ConfirmedDemographicsPrefillInput,
+): Promise<void> {
+  const source = {
+    type: 'user_input',
+    displayName: 'Confirmed in mobile app',
+    matchMethod: 'direct_api' as const,
+  };
+
+  const entry = <T>(value: T | null) => {
+    const hasValue = typeof value === 'string'
+      ? value.trim().length > 0
+      : value != null;
+
+    return {
+      value: hasValue ? value : null,
+      confidence: hasValue ? 'high' : 'none',
+      sources: hasValue ? [source] : [],
+    };
+  };
+
+  await setDoc(
+    doc(db, `users/${uid}/medical_history_prefill/latest`),
+    {
+      demographics: {
+        fullName: entry(demographics.fullName || null),
+        age: entry(demographics.age),
+        biologicalSex: entry(demographics.biologicalSex),
+        ethnicity: entry(demographics.ethnicity || null),
+        race: entry(demographics.race || null),
+      },
+      confirmedAt: serverTimestamp(),
+    },
+    { merge: true },
   );
 }

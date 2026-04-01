@@ -159,12 +159,12 @@ export default function CompleteScreen() {
           <View style={styles.features}>
             <FeatureRow
               icon="chart.line.uptrend.xyaxis"
-              text="Track your symptoms over time"
+              text="Review your health data and progress"
               colors={colors}
             />
             <FeatureRow
               icon="bell.badge"
-              text="Receive periodic survey reminders"
+              text="Stay up to date with study reminders"
               colors={colors}
             />
             <FeatureRow

@@ -85,6 +85,7 @@ export interface NormalizedMetric {
 
 interface SyncState {
   lastRunAt: string;
+  lastVoidAt?: string | null;
   lastLtTs: string;
   lastStatus: "success" | "error";
   lastError: string | null;
@@ -261,6 +262,13 @@ async function writeToFirestore(
     }
 
     const userMetrics = metricsByThroneUser.get(throneUserId) ?? [];
+    const latestVoidAt = userSessions.reduce<string | null>((latest, session) => {
+      if (!session.startTs) return latest;
+      if (!latest) return session.startTs;
+      return new Date(session.startTs).getTime() > new Date(latest).getTime() ?
+        session.startTs :
+        latest;
+    }, null);
 
     for (const firebaseUid of firebaseUids) {
       // Write sessions in batches
@@ -294,6 +302,7 @@ async function writeToFirestore(
       // Write per-user sync state
       await db.doc(`users/${firebaseUid}/throne_sync/state`).set({
         lastRunAt: new Date().toISOString(),
+        lastVoidAt: latestVoidAt,
         lastStatus: "success",
         sessionCount: userSessions.length,
         metricCount: userMetrics.length,

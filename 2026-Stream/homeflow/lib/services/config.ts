@@ -4,10 +4,10 @@ import { BackendConfig, BackendType } from './types';
  * Backend Configuration
  *
  * Reads EXPO_PUBLIC_BACKEND_TYPE from environment to determine storage backend.
- * Defaults to local AsyncStorage when not set.
+ * Defaults to Firebase when not set so device builds use the real backend.
  */
 export function getBackendConfig(): BackendConfig {
-  const backendType = (process.env.EXPO_PUBLIC_BACKEND_TYPE as BackendType) || 'local';
+  const backendType = (process.env.EXPO_PUBLIC_BACKEND_TYPE as BackendType) || 'firebase';
 
   if (backendType === 'firebase') {
     return {

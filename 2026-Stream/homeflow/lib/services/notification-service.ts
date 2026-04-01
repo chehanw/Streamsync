@@ -22,7 +22,6 @@ const NOTIFICATION_IDS = {
 
 type DataSource = keyof typeof NOTIFICATION_IDS;
 
-// Configure how notifications are presented when the app is foregrounded
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
     shouldPlaySound: false,
@@ -43,10 +42,6 @@ const NOTIFICATION_CONTENT: Record<DataSource, { title: string; body: string }> 
   },
 };
 
-/**
- * Request notification permissions from the user.
- * Returns true if granted.
- */
 export async function requestNotificationPermissions(): Promise<boolean> {
   if (Platform.OS === 'web') return false;
 
@@ -57,10 +52,6 @@ export async function requestNotificationPermissions(): Promise<boolean> {
   return status === 'granted';
 }
 
-/**
- * Cancel any pending notification for the given source and schedule
- * a new one to fire after `delayMs` milliseconds.
- */
 async function scheduleReminder(source: DataSource, delayMs: number): Promise<void> {
   await Notifications.cancelScheduledNotificationAsync(NOTIFICATION_IDS[source]).catch(() => {});
 
@@ -77,10 +68,6 @@ async function scheduleReminder(source: DataSource, delayMs: number): Promise<vo
   });
 }
 
-/**
- * Fire an immediate notification (shown right away as a banner).
- * Throttled to once per 24h per source via AsyncStorage.
- */
 async function fireImmediateReminder(source: DataSource): Promise<void> {
   const storageKey = source === 'healthkit'
     ? STORAGE_KEYS.LAST_NOTIFICATION_HEALTHKIT
@@ -89,7 +76,7 @@ async function fireImmediateReminder(source: DataSource): Promise<void> {
   const lastFiredStr = await AsyncStorage.getItem(storageKey);
   if (lastFiredStr) {
     const lastFired = parseInt(lastFiredStr, 10);
-    if (Date.now() - lastFired < HOURS_24) return; // already notified today
+    if (Date.now() - lastFired < HOURS_24) return;
   }
 
   await Notifications.scheduleNotificationAsync({
@@ -98,40 +85,28 @@ async function fireImmediateReminder(source: DataSource): Promise<void> {
       title: NOTIFICATION_CONTENT[source].title,
       body: NOTIFICATION_CONTENT[source].body,
     },
-    trigger: null, // fires immediately
+    trigger: null,
   });
 
   await AsyncStorage.setItem(storageKey, Date.now().toString());
 }
 
-/**
- * Check if HealthKit has data in the last 48 hours.
- * Returns true if recent data exists.
- */
 async function hasRecentHealthKitData(): Promise<boolean> {
-  if (Platform.OS !== 'ios') return true; // non-iOS: don't nag
+  if (Platform.OS !== 'ios') return true;
 
   try {
     const now = new Date();
     const cutoff = new Date(now.getTime() - HOURS_48);
 
     const activity = await getDailyActivity({ startDate: cutoff, endDate: now });
-
-    // Check if any day has non-zero steps or activity
-    const hasActivity = activity.some(
+    return activity.some(
       (day) => day.steps > 0 || day.activeEnergyBurned > 0 || day.exerciseMinutes > 0
     );
-
-    return hasActivity;
   } catch {
-    return true; // on error, assume data exists (don't spam user)
+    return true;
   }
 }
 
-/**
- * Check if Throne has data in the last 48 hours.
- * Returns true if a recent measurement exists.
- */
 async function hasRecentThroneData(): Promise<boolean> {
   try {
     const latest = await ThroneService.getLatestMeasurement();
@@ -140,14 +115,10 @@ async function hasRecentThroneData(): Promise<boolean> {
     const age = Date.now() - new Date(latest.timestamp).getTime();
     return age < HOURS_48;
   } catch {
-    return true; // on error, assume data exists
+    return true;
   }
 }
 
-/**
- * DEV ONLY: Fire an immediate notification for a specific source,
- * bypassing the 24h throttle. Useful for testing notification appearance.
- */
 export async function triggerTestNotification(source: DataSource): Promise<void> {
   await Notifications.scheduleNotificationAsync({
     identifier: `${NOTIFICATION_IDS[source]}-test`,
@@ -155,17 +126,10 @@ export async function triggerTestNotification(source: DataSource): Promise<void>
       title: `[TEST] ${NOTIFICATION_CONTENT[source].title}`,
       body: NOTIFICATION_CONTENT[source].body,
     },
-    trigger: null, // fires immediately
+    trigger: null,
   });
 }
 
-/**
- * Main entry point. Call this whenever the app comes to the foreground.
- *
- * For each data source:
- * - If data found within 48h → reschedule reminder 48h from now
- * - If no data found → fire an immediate reminder (once per 24h)
- */
 export async function checkAndScheduleReminders(): Promise<void> {
   const { status } = await Notifications.getPermissionsAsync();
   if (status !== 'granted') return;

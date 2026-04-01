@@ -20,7 +20,7 @@ platform :ios, podfile_properties['ios.deploymentTarget'] || '15.1'
 
 prepare_react_native_project!
 
-target 'HomeFlow' do
+target 'StreamSync' do
   use_expo_modules!
 
   if ENV['EXPO_USE_COMMUNITY_AUTOLINKING'] == '1'
@@ -65,18 +65,6 @@ target 'HomeFlow' do
       target.build_configurations.each do |config|
         if config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'].to_f < 16.0
           config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '16.0'
-        end
-      end
-    end
-
-    # Inject Local.xcconfig (per-developer signing) into Pods xcconfigs
-    local_xcconfig = File.join(__dir__, 'Local.xcconfig')
-    if File.exist?(local_xcconfig)
-      Dir.glob(File.join(__dir__, 'Pods', 'Target Support Files', 'Pods-HomeFlow', '*.xcconfig')).each do |xcconfig_path|
-        content = File.read(xcconfig_path)
-        include_line = '#include "../../../Local.xcconfig"'
-        unless content.include?(include_line)
-          File.write(xcconfig_path, "#{include_line}\n#{content}")
         end
       end
     end

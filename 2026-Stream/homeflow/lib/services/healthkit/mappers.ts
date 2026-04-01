@@ -8,9 +8,6 @@ import { CategoryValueSleepAnalysis } from '@kingstinct/react-native-healthkit';
 import type { QuantitySample } from '@kingstinct/react-native-healthkit';
 import { SleepStage, type SleepSample } from './types';
 
-// ── Date helpers ────────────────────────────────────────────────────
-
-/** Format a Date to YYYY-MM-DD */
 export function formatDateKey(date: Date): string {
   const y = date.getFullYear();
   const m = String(date.getMonth() + 1).padStart(2, '0');
@@ -18,21 +15,18 @@ export function formatDateKey(date: Date): string {
   return `${y}-${m}-${d}`;
 }
 
-/** Get start of day (00:00:00.000) in local timezone */
 export function startOfDay(date: Date): Date {
   const d = new Date(date);
   d.setHours(0, 0, 0, 0);
   return d;
 }
 
-/** Get end of day (23:59:59.999) in local timezone */
 export function endOfDay(date: Date): Date {
   const d = new Date(date);
   d.setHours(23, 59, 59, 999);
   return d;
 }
 
-/** Build a DateRange for the last N days (including today) */
 export function getDateRange(days: number): { startDate: Date; endDate: Date } {
   const end = new Date();
   const start = new Date();
@@ -40,7 +34,6 @@ export function getDateRange(days: number): { startDate: Date; endDate: Date } {
   return { startDate: startOfDay(start), endDate: endOfDay(end) };
 }
 
-/** Get all YYYY-MM-DD keys between two dates */
 export function getDateKeysInRange(startDate: Date, endDate: Date): string[] {
   const keys: string[] = [];
   const current = startOfDay(new Date(startDate));
@@ -52,9 +45,6 @@ export function getDateKeysInRange(startDate: Date, endDate: Date): string[] {
   return keys;
 }
 
-// ── Quantity sample helpers ─────────────────────────────────────────
-
-/** Group quantity samples by YYYY-MM-DD */
 export function bucketSamplesByDay(
   samples: readonly QuantitySample[],
 ): Map<string, QuantitySample[]> {
@@ -68,12 +58,10 @@ export function bucketSamplesByDay(
   return map;
 }
 
-/** Sum all quantity values in a list of samples */
 export function sumSamples(samples: readonly QuantitySample[]): number {
   return samples.reduce((sum, s) => sum + s.quantity, 0);
 }
 
-/** Get min/max/avg from samples */
 export function statsSamples(samples: readonly QuantitySample[]): {
   min: number;
   max: number;
@@ -99,9 +87,6 @@ export function statsSamples(samples: readonly QuantitySample[]): {
   };
 }
 
-// ── Sleep mappers ───────────────────────────────────────────────────
-
-/** Map HKCategoryValueSleepAnalysis to our SleepStage enum */
 export function mapSleepValue(value: number): SleepStage {
   switch (value) {
     case CategoryValueSleepAnalysis.inBed:
@@ -121,7 +106,6 @@ export function mapSleepValue(value: number): SleepStage {
   }
 }
 
-/** Convert a raw HK sleep category sample to our SleepSample */
 export function mapCategorySampleToSleepSample(raw: {
   value: number;
   startDate: Date;
@@ -138,27 +122,19 @@ export function mapCategorySampleToSleepSample(raw: {
   };
 }
 
-/**
- * Determine the "night date" for a sleep sample.
- * Sleep that starts before 6 PM belongs to the previous night.
- * Sleep that starts after 6 PM belongs to that night's date.
- */
 export function getSleepNightDate(startDate: Date): string {
   const d = new Date(startDate);
-  // If sleep started before 6 PM, it likely belongs to the previous night
   if (d.getHours() < 18) {
     d.setDate(d.getDate() - 1);
   }
   return formatDateKey(d);
 }
 
-/** Calculate sedentary minutes estimate */
 export function estimateSedentaryMinutes(
   exerciseMinutes: number,
   moveMinutes: number,
   standMinutes: number,
 ): number {
-  // Assume 16 waking hours = 960 minutes
   const WAKING_MINUTES = 960;
   const active = exerciseMinutes + moveMinutes + standMinutes;
   return Math.max(0, Math.round(WAKING_MINUTES - active));

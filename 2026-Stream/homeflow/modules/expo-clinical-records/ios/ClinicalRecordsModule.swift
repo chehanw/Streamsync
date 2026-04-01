@@ -3,6 +3,11 @@ import HealthKit
 
 public class ClinicalRecordsModule: Module {
   private lazy var healthStore = HKHealthStore()
+  private let isoFormatter: ISO8601DateFormatter = {
+    let formatter = ISO8601DateFormatter()
+    formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+    return formatter
+  }()
 
   // Map short string identifiers to HKClinicalTypeIdentifier
   private static let typeMap: [String: HKClinicalTypeIdentifier] = {
@@ -44,12 +49,18 @@ public class ClinicalRecordsModule: Module {
       }
 
       var types = Set<HKClinicalType>()
+      var readTypes = Set<HKObjectType>()
       for name in typeNames {
         guard let identifier = ClinicalRecordsModule.typeMap[name],
               let clinicalType = HKObjectType.clinicalType(forIdentifier: identifier) else {
           continue
         }
         types.insert(clinicalType)
+        readTypes.insert(clinicalType)
+      }
+
+      if let cdaDocumentType = HKObjectType.documentType(forIdentifier: HKDocumentTypeIdentifier.CDA) {
+        readTypes.insert(cdaDocumentType)
       }
 
       if types.isEmpty {
@@ -57,7 +68,7 @@ public class ClinicalRecordsModule: Module {
         return
       }
 
-      self.healthStore.requestAuthorization(toShare: nil, read: types) { success, error in
+      self.healthStore.requestAuthorization(toShare: nil, read: readTypes) { success, error in
         if let error = error {
           promise.resolve(["success": false, "note": error.localizedDescription])
         } else {
@@ -121,20 +132,70 @@ public class ClinicalRecordsModule: Module {
 
       self.healthStore.execute(query)
     }
+
+    AsyncFunction("getDocumentSamples") { (options: [String: Any]?, promise: Promise) in
+      guard HKHealthStore.isHealthDataAvailable(),
+            self.healthStore.supportsHealthRecords(),
+            let documentType = HKObjectType.documentType(forIdentifier: HKDocumentTypeIdentifier.CDA) else {
+        promise.resolve([] as [[String: Any]])
+        return
+      }
+
+      var predicate: NSPredicate? = nil
+      if let opts = options {
+        let startDate = (opts["startDate"] as? String).flatMap { self.parseISO8601($0) }
+        let endDate = (opts["endDate"] as? String).flatMap { self.parseISO8601($0) }
+        if startDate != nil || endDate != nil {
+          predicate = HKQuery.predicateForSamples(
+            withStart: startDate,
+            end: endDate,
+            options: .strictStartDate
+          )
+        }
+      }
+
+      let limit = (options?["limit"] as? Int) ?? HKObjectQueryNoLimit
+      var aggregated: [[String: Any]] = []
+      var didResolve = false
+
+      let query = HKDocumentQuery(
+        documentType: documentType,
+        predicate: predicate,
+        limit: limit,
+        sortDescriptors: [NSSortDescriptor(key: HKSampleSortIdentifierStartDate, ascending: false)],
+        includeDocumentData: true
+      ) { _, results, done, error in
+        if didResolve { return }
+
+        if error != nil {
+          didResolve = true
+          promise.resolve([] as [[String: Any]])
+          return
+        }
+
+        if let samples = results as? [HKCDADocumentSample] {
+          aggregated.append(contentsOf: samples.map { self.serializeDocumentSample($0) })
+        }
+
+        if done {
+          didResolve = true
+          promise.resolve(aggregated)
+        }
+      }
+
+      self.healthStore.execute(query)
+    }
   }
 
   // MARK: - Helpers
 
   private func serializeClinicalRecord(_ record: HKClinicalRecord) -> [String: Any] {
-    let formatter = ISO8601DateFormatter()
-    formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-
     var dict: [String: Any] = [
       "id": record.uuid.uuidString,
       "clinicalType": record.clinicalType.identifier,
       "displayName": record.displayName,
-      "startDate": formatter.string(from: record.startDate),
-      "endDate": formatter.string(from: record.endDate),
+      "startDate": isoFormatter.string(from: record.startDate),
+      "endDate": isoFormatter.string(from: record.endDate),
     ]
 
     // Extract FHIR resource data if available
@@ -152,12 +213,38 @@ public class ClinicalRecordsModule: Module {
     return dict
   }
 
+  private func serializeDocumentSample(_ sample: HKCDADocumentSample) -> [String: Any] {
+    var dict: [String: Any] = [
+      "id": sample.uuid.uuidString,
+      "documentType": sample.documentType.identifier,
+      "startDate": isoFormatter.string(from: sample.startDate),
+      "endDate": isoFormatter.string(from: sample.endDate),
+    ]
+
+    if let title = sample.document?.title {
+      dict["title"] = title
+    }
+    if let patientName = sample.document?.patientName {
+      dict["patientName"] = patientName
+    }
+    if let authorName = sample.document?.authorName {
+      dict["authorName"] = authorName
+    }
+    if let custodianName = sample.document?.custodianName {
+      dict["custodianName"] = custodianName
+    }
+    if let documentData = sample.document?.documentData {
+      dict["documentData"] = documentData.base64EncodedString()
+    }
+
+    return dict
+  }
+
   private func parseISO8601(_ string: String) -> Date? {
-    let formatter = ISO8601DateFormatter()
-    formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-    return formatter.date(from: string) ?? {
-      formatter.formatOptions = [.withInternetDateTime]
-      return formatter.date(from: string)
+    return isoFormatter.date(from: string) ?? {
+      let fallback = ISO8601DateFormatter()
+      fallback.formatOptions = [.withInternetDateTime]
+      return fallback.date(from: string)
     }()
   }
 }

@@ -28,6 +28,7 @@ import {
   getAllClinicalRecords,
   getDemographics,
 } from '@/lib/services/healthkit';
+import { OnboardingService } from '@/lib/services/onboarding-service';
 import {
   buildMedicalHistoryPrefill,
 } from '@/lib/services/fhir';
@@ -36,6 +37,7 @@ import type {
   HealthKitDemographics,
   MedicalHistoryPrefill,
 } from '@/lib/services/fhir';
+import { syncSmartClinicalData } from '@/lib/services/smart';
 import { db, getAuth } from './firestore';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -50,6 +52,51 @@ export interface SyncFhirPrefillResult {
     procedures: number;
   };
   error?: string;
+}
+
+function mergeRecords(
+  primary: ClinicalRecordsInput,
+  secondary: ClinicalRecordsInput | null,
+): ClinicalRecordsInput {
+  if (!secondary) return primary;
+
+  const mergeGroup = (
+    first: Array<{ displayName: string; fhirResource?: Record<string, unknown> }>,
+    second: Array<{ displayName: string; fhirResource?: Record<string, unknown> }>,
+  ) => {
+    const seen = new Set<string>();
+    const merged: Array<{ displayName: string; fhirResource?: Record<string, unknown> }> = [];
+
+    for (const record of [...first, ...second]) {
+      const resourceId = typeof record.fhirResource?.id === 'string' ? record.fhirResource.id : '';
+      const key = `${resourceId}|${record.displayName}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      merged.push(record);
+    }
+
+    return merged;
+  };
+
+  return {
+    medications: mergeGroup(primary.medications, secondary.medications),
+    labResults: mergeGroup(primary.labResults, secondary.labResults),
+    conditions: mergeGroup(primary.conditions, secondary.conditions),
+    procedures: mergeGroup(primary.procedures, secondary.procedures),
+  };
+}
+
+function mergeDemographics(
+  primary: HealthKitDemographics,
+  secondary: HealthKitDemographics | null,
+): HealthKitDemographics {
+  if (!secondary) return primary;
+
+  return {
+    age: primary.age ?? secondary.age,
+    dateOfBirth: primary.dateOfBirth ?? secondary.dateOfBirth,
+    biologicalSex: primary.biologicalSex ?? secondary.biologicalSex,
+  };
 }
 
 // ── syncFhirPrefill ───────────────────────────────────────────────────────────
@@ -74,10 +121,25 @@ export async function syncFhirPrefill(): Promise<SyncFhirPrefillResult> {
     console.log('[FhirPrefill] Fetching clinical records and demographics…');
 
     // Fetch in parallel — separate HealthKit APIs, no contention
-    const [records, demographics] = await Promise.all([
+    const [records, demographics, onboardingData] = await Promise.all([
       getAllClinicalRecords(),
       getDemographics(),
+      OnboardingService.getData(),
     ]);
+
+    let providerRecords: ClinicalRecordsInput | null = null;
+    let providerDemographics: HealthKitDemographics | null = null;
+    const providerId = onboardingData.providerConnection?.providerId;
+
+    if (providerId) {
+      try {
+        const providerSync = await syncSmartClinicalData(providerId);
+        providerRecords = providerSync.clinicalRecords;
+        providerDemographics = providerSync.demographics;
+      } catch (error) {
+        console.warn('[FhirPrefill] SMART sync skipped:', error);
+      }
+    }
 
     const sourceRecordCounts = {
       medications: records.medications.length,
@@ -89,7 +151,7 @@ export async function syncFhirPrefill(): Promise<SyncFhirPrefillResult> {
     console.log('[FhirPrefill] Record counts:', sourceRecordCounts);
 
     // Map ClinicalRecord[] → ClinicalRecordsInput (parser's expected shape)
-    const clinicalInput: ClinicalRecordsInput = {
+    const healthKitInput: ClinicalRecordsInput = {
       medications: records.medications.map((r) => ({
         displayName: r.displayName,
         fhirResource: r.fhirResource,
@@ -115,7 +177,9 @@ export async function syncFhirPrefill(): Promise<SyncFhirPrefillResult> {
     };
 
     // Run the deterministic FHIR parser
-    const prefill = buildMedicalHistoryPrefill(clinicalInput, hkDemographics);
+    const clinicalInput = mergeRecords(healthKitInput, providerRecords);
+    const mergedDemographics = mergeDemographics(hkDemographics, providerDemographics);
+    const prefill = buildMedicalHistoryPrefill(clinicalInput, mergedDemographics);
 
     // Write to Firestore — overwrite on each sync so it's always current
     const ref = doc(db, `users/${uid}/medical_history_prefill/latest`);
@@ -123,6 +187,10 @@ export async function syncFhirPrefill(): Promise<SyncFhirPrefillResult> {
       ...prefill,
       generatedAt: serverTimestamp(),
       sourceRecordCounts,
+      sourceSystems: {
+        healthKit: true,
+        smartProvider: providerId ?? null,
+      },
     });
 
     console.log('[FhirPrefill] Written to Firestore → users/' + uid + '/medical_history_prefill/latest');

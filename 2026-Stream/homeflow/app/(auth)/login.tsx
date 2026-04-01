@@ -23,7 +23,6 @@ import {
 } from 'react-native';
 import { useRouter, Href } from 'expo-router';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import * as AppleAuthentication from 'expo-apple-authentication';
 import { Colors, StanfordColors, Spacing } from '@/constants/theme';
 import { useAuth } from '@/hooks/use-auth';
 import { devSkipAuth } from '@/lib/dev-flags';
@@ -49,7 +48,7 @@ export default function LoginScreen() {
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? 'light'];
   const isDark = colorScheme === 'dark';
-  const { signInWithEmail, signInWithApple, signInWithGoogle, sendPasswordResetEmail } = useAuth();
+  const { signInWithEmail, signInWithGoogle, sendPasswordResetEmail } = useAuth();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -77,16 +76,22 @@ export default function LoginScreen() {
       await signInWithEmail(trimmedEmail, password);
     } catch (error: any) {
       const code = error?.code ?? '';
+      const rawMessage = error?.message ?? '';
+      console.error('[Login] Email sign-in failed:', { code, rawMessage });
       const message =
         code === 'auth/invalid-credential' || code === 'auth/wrong-password' || code === 'auth/user-not-found'
           ? 'Invalid email or password.'
+          : code === 'auth/operation-not-allowed'
+          ? 'Email/password authentication is not enabled for this Firebase project.'
           : code === 'auth/too-many-requests'
           ? 'Too many attempts. Please try again later.'
           : code === 'auth/user-disabled'
           ? 'This account has been disabled. Contact support.'
+          : code === 'auth/invalid-email'
+          ? 'Please enter a valid email address.'
           : code === 'auth/network-request-failed'
           ? 'Network error. Check your connection and try again.'
-          : 'Sign in failed. Please try again.';
+          : rawMessage || 'Sign in failed. Please try again.';
       Alert.alert('Sign In Failed', message);
     } finally {
       setLoading(false);
@@ -115,19 +120,6 @@ export default function LoginScreen() {
           ? 'Network error. Check your connection and try again.'
           : 'Failed to send reset email. Please try again.';
       Alert.alert('Error', message);
-    }
-  };
-
-  const handleAppleLogin = async () => {
-    setLoading(true);
-    try {
-      await signInWithApple();
-    } catch (error: any) {
-      if (error?.code !== 'ERR_REQUEST_CANCELED') {
-        Alert.alert('Apple Sign In Failed', error?.message || 'Please try again.');
-      }
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -216,20 +208,6 @@ export default function LoginScreen() {
           </View>
 
           <View style={styles.socialButtons}>
-            {Platform.OS === 'ios' && (
-              <AppleAuthentication.AppleAuthenticationButton
-                buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN}
-                buttonStyle={
-                  colorScheme === 'dark'
-                    ? AppleAuthentication.AppleAuthenticationButtonStyle.WHITE
-                    : AppleAuthentication.AppleAuthenticationButtonStyle.BLACK
-                }
-                cornerRadius={12}
-                style={styles.appleButton}
-                onPress={handleAppleLogin}
-              />
-            )}
-
             <TouchableOpacity
               style={[styles.socialButton, { borderColor: colors.border }]}
               onPress={handleGoogleLogin}
@@ -369,19 +347,21 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginVertical: Spacing.lg,
+    gap: Spacing.sm,
   },
   dividerLine: {
     flex: 1,
     height: 1,
   },
   dividerText: {
-    marginHorizontal: Spacing.md,
     fontSize: 14,
+    textTransform: 'uppercase',
   },
   socialButtons: {
-    gap: Spacing.sm,
+    gap: Spacing.md,
   },
   appleButton: {
+    width: '100%',
     height: 52,
   },
   socialButton: {
@@ -389,17 +369,19 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderRadius: 12,
     flexDirection: 'row',
-    justifyContent: 'center',
     alignItems: 'center',
-    gap: 10,
+    justifyContent: 'center',
+    gap: 12,
+    paddingHorizontal: 16,
   },
   googleLogo: {
-    width: 20,
-    height: 20,
+    width: 18,
+    height: 18,
+    resizeMode: 'contain',
   },
   socialButtonText: {
-    fontSize: 17,
-    fontWeight: '500',
+    fontSize: 16,
+    fontWeight: '600',
   },
   footer: {
     flexDirection: 'row',

@@ -115,8 +115,8 @@ export default function WelcomeScreen() {
             />
             <FeatureItem
               icon="chart.line.uptrend.xyaxis"
-              title="Symptom Tracking"
-              description="Monitor your urinary symptoms over time"
+              title="Personalized Insights"
+              description="Review your study data and progress in one place"
               colors={colors}
             />
             <FeatureItem

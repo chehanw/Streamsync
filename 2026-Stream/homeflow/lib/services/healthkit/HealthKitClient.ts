@@ -39,34 +39,23 @@ import {
   type HealthPermissionResult,
 } from './types';
 
-// ── HK Type Identifiers ────────────────────────────────────────────
-// Using the full Apple string identifiers as required by the library.
-
 const HK = {
-  // Activity
   stepCount: 'HKQuantityTypeIdentifierStepCount' as const,
   activeEnergy: 'HKQuantityTypeIdentifierActiveEnergyBurned' as const,
   exerciseTime: 'HKQuantityTypeIdentifierAppleExerciseTime' as const,
   moveTime: 'HKQuantityTypeIdentifierAppleMoveTime' as const,
   standTime: 'HKQuantityTypeIdentifierAppleStandTime' as const,
   distance: 'HKQuantityTypeIdentifierDistanceWalkingRunning' as const,
-
-  // Sleep (category type)
   sleepAnalysis: 'HKCategoryTypeIdentifierSleepAnalysis' as const,
-
-  // Vitals
   heartRate: 'HKQuantityTypeIdentifierHeartRate' as const,
   restingHeartRate: 'HKQuantityTypeIdentifierRestingHeartRate' as const,
   hrv: 'HKQuantityTypeIdentifierHeartRateVariabilitySDNN' as const,
   respiratoryRate: 'HKQuantityTypeIdentifierRespiratoryRate' as const,
   oxygenSaturation: 'HKQuantityTypeIdentifierOxygenSaturation' as const,
-
-  // Body (read-only context)
   bodyMass: 'HKQuantityTypeIdentifierBodyMass' as const,
   height: 'HKQuantityTypeIdentifierHeight' as const,
 };
 
-/** All types we request read access for */
 const ALL_READ_TYPES = [
   HK.stepCount,
   HK.activeEnergy,
@@ -84,7 +73,6 @@ const ALL_READ_TYPES = [
   HK.height,
 ];
 
-/** Types we request write access for (subset) */
 const WRITE_TYPES = [
   HK.stepCount,
   HK.activeEnergy,
@@ -92,13 +80,9 @@ const WRITE_TYPES = [
   HK.heartRate,
 ];
 
-// ── Platform guard ──────────────────────────────────────────────────
-
 function isIOS(): boolean {
   return Platform.OS === 'ios';
 }
-
-// ── Query helper ────────────────────────────────────────────────────
 
 async function queryQuantity(
   identifier: string,
@@ -106,7 +90,7 @@ async function queryQuantity(
   unit: string,
 ): Promise<readonly QuantitySample[]> {
   return queryQuantitySamples(identifier as any, {
-    limit: 0, // 0 = no limit, fetch all samples in range
+    limit: 0,
     unit,
     filter: {
       date: {
@@ -117,17 +101,6 @@ async function queryQuantity(
   });
 }
 
-// ── Public API ──────────────────────────────────────────────────────
-
-/**
- * Request HealthKit permissions for all data types used by the app.
- * Must be called before any data queries.
- *
- * Privacy note: HealthKit always returns "not determined" for read
- * permissions regardless of whether the user granted them. This is
- * an Apple privacy design — the only way to know if read was granted
- * is to attempt a query and see if data comes back.
- */
 export async function requestHealthPermissions(): Promise<HealthPermissionResult> {
   if (!isIOS()) {
     return {
@@ -150,9 +123,23 @@ export async function requestHealthPermissions(): Promise<HealthPermissionResult
       toShare: WRITE_TYPES as any,
     });
 
+    // iOS only shows the permission dialog once per app install.  After that
+    // first presentation (even if it happened during a prior test run and the
+    // user dismissed without granting), requestAuthorization resolves silently
+    // and we cannot read the granted/denied status (Apple privacy restriction).
+    //
+    // To confirm data is actually flowing, attempt a quick step-count query
+    // for the last 7 days.  A non-empty result means HealthKit is sharing data.
+    // An empty result is ambiguous (denied OR simply no data recorded), but at
+    // a minimum it tells us the query path works without throwing.
+    const dataVerified = await verifyHealthKitDataAccess();
+
     return {
       success: true,
-      note: 'Authorization requested. Read permission status is always "not determined" for privacy — this is expected Apple behavior.',
+      dataVerified,
+      note: dataVerified
+        ? 'HealthKit is connected and sharing data.'
+        : 'Authorization requested. If no health data appears in the app, go to Settings → Health → Data Access & Devices → StreamSync and enable all categories.',
     };
   } catch (error) {
     return {
@@ -163,14 +150,34 @@ export async function requestHealthPermissions(): Promise<HealthPermissionResult
 }
 
 /**
- * Get daily activity summaries for a date range.
- * Returns one DailyActivity per day.
+ * Attempts a lightweight HealthKit query to verify data access is working.
+ * Returns true if at least one step-count sample was returned for the last 7
+ * days, false if the query returned empty (permissions denied or no data).
+ *
+ * Note: an empty result is ambiguous — it could mean denied permissions OR
+ * that the user simply has no recorded steps.  Use this as a sanity-check,
+ * not a definitive auth-status check.
  */
+export async function verifyHealthKitDataAccess(): Promise<boolean> {
+  if (!isIOS()) return false;
+  try {
+    const endDate = new Date();
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - 7);
+    const samples = await queryQuantitySamples(HK.stepCount, {
+      limit: 1,
+      unit: 'count',
+      filter: { date: { startDate, endDate } },
+    });
+    return Array.isArray(samples) && samples.length > 0;
+  } catch {
+    return false;
+  }
+}
+
 export async function getDailyActivity(range: DateRange): Promise<DailyActivity[]> {
   if (!isIOS()) return [];
 
-  // Fetch all activity types in parallel; catch individually so Watch-only
-  // type failures (exerciseTime, moveTime, standTime) don't block step/energy data
   const [steps, energy, exercise, move, stand, distance] = await Promise.all([
     queryQuantity(HK.stepCount, range, 'count').catch(() => [] as readonly QuantitySample[]),
     queryQuantity(HK.activeEnergy, range, 'kcal').catch(() => [] as readonly QuantitySample[]),
@@ -180,7 +187,6 @@ export async function getDailyActivity(range: DateRange): Promise<DailyActivity[
     queryQuantity(HK.distance, range, 'm').catch(() => [] as readonly QuantitySample[]),
   ]);
 
-  // Bucket each metric by day
   const stepsByDay = bucketSamplesByDay(steps);
   const energyByDay = bucketSamplesByDay(energy);
   const exerciseByDay = bucketSamplesByDay(exercise);
@@ -188,7 +194,6 @@ export async function getDailyActivity(range: DateRange): Promise<DailyActivity[
   const standByDay = bucketSamplesByDay(stand);
   const distanceByDay = bucketSamplesByDay(distance);
 
-  // Build daily summaries
   const dateKeys = getDateKeysInRange(range.startDate, range.endDate);
   return dateKeys.map((date) => {
     const exerciseMin = Math.round(sumSamples(exerciseByDay.get(date) ?? []));
@@ -208,12 +213,6 @@ export async function getDailyActivity(range: DateRange): Promise<DailyActivity[
   });
 }
 
-/**
- * Get sleep data for a date range.
- * Groups sleep samples into nights with stage breakdowns.
- * On iOS 16+, provides detailed Core/Deep/REM stages.
- * On older iOS, falls back to "asleep" vs "in bed".
- */
 export async function getSleep(range: DateRange): Promise<SleepNight[]> {
   if (!isIOS()) return [];
 
@@ -229,7 +228,6 @@ export async function getSleep(range: DateRange): Promise<SleepNight[]> {
 
   if (!rawSamples || rawSamples.length === 0) return [];
 
-  // Convert to our SleepSample type and group by night
   const nightMap = new Map<string, ReturnType<typeof mapCategorySampleToSleepSample>[]>();
 
   for (const raw of rawSamples) {
@@ -240,7 +238,6 @@ export async function getSleep(range: DateRange): Promise<SleepNight[]> {
     nightMap.set(nightKey, bucket);
   }
 
-  // Aggregate each night
   const nights: SleepNight[] = [];
   for (const [date, samples] of nightMap) {
     let inBedMinutes = 0;
@@ -273,50 +270,33 @@ export async function getSleep(range: DateRange): Promise<SleepNight[]> {
       }
     }
 
-    const hasDetailedStages = coreMinutes > 0 || deepMinutes > 0 || remMinutes > 0;
-    const totalAsleep = hasDetailedStages
-      ? coreMinutes + deepMinutes + remMinutes
-      : asleepUndifferentiated;
-    const totalInBed = inBedMinutes > 0
-      ? inBedMinutes
-      : totalAsleep + awakeMinutes; // fallback if no explicit inBed samples
-
-    const efficiency = totalInBed > 0
-      ? Math.round((totalAsleep / totalInBed) * 1000) / 10
+    const totalSleepMinutes = coreMinutes + deepMinutes + remMinutes + asleepUndifferentiated;
+    const timeInBedMinutes = Math.max(inBedMinutes, totalSleepMinutes + awakeMinutes);
+    const sleepEfficiency = timeInBedMinutes > 0
+      ? Math.round((totalSleepMinutes / timeInBedMinutes) * 100)
       : 0;
 
     nights.push({
       date,
-      totalAsleepMinutes: Math.round(totalAsleep),
-      totalInBedMinutes: Math.round(totalInBed),
-      sleepEfficiency: efficiency,
-      hasDetailedStages,
-      stages: {
-        awake: Math.round(awakeMinutes),
-        core: Math.round(coreMinutes),
-        deep: Math.round(deepMinutes),
-        rem: Math.round(remMinutes),
-        asleepUndifferentiated: Math.round(asleepUndifferentiated),
-      },
+      timeInBedMinutes,
+      totalSleepMinutes,
+      awakeMinutes,
+      coreMinutes,
+      deepMinutes,
+      remMinutes,
+      sleepEfficiency,
       samples,
     });
   }
 
-  // Sort by date
   nights.sort((a, b) => a.date.localeCompare(b.date));
   return nights;
 }
 
-/**
- * Get vitals data for a date range.
- * Includes heart rate (min/avg/max), resting HR, HRV, respiratory rate, SpO2.
- */
 export async function getVitals(range: DateRange): Promise<VitalsDay[]> {
   if (!isIOS()) return [];
 
-  // Fetch all vitals in parallel; catch individually so one missing type
-  // doesn't block the rest
-  const [hr, restingHR, hrvSamples, respRate, spo2] = await Promise.all([
+  const [heartRate, restingHR, hrv, resp, oxygen] = await Promise.all([
     queryQuantity(HK.heartRate, range, 'count/min').catch(() => [] as readonly QuantitySample[]),
     queryQuantity(HK.restingHeartRate, range, 'count/min').catch(() => [] as readonly QuantitySample[]),
     queryQuantity(HK.hrv, range, 'ms').catch(() => [] as readonly QuantitySample[]),
@@ -324,99 +304,82 @@ export async function getVitals(range: DateRange): Promise<VitalsDay[]> {
     queryQuantity(HK.oxygenSaturation, range, '%').catch(() => [] as readonly QuantitySample[]),
   ]);
 
-  // Bucket by day
-  const hrByDay = bucketSamplesByDay(hr);
+  const hrByDay = bucketSamplesByDay(heartRate);
   const restingByDay = bucketSamplesByDay(restingHR);
-  const hrvByDay = bucketSamplesByDay(hrvSamples);
-  const respByDay = bucketSamplesByDay(respRate);
-  const spo2ByDay = bucketSamplesByDay(spo2);
+  const hrvByDay = bucketSamplesByDay(hrv);
+  const respByDay = bucketSamplesByDay(resp);
+  const oxygenByDay = bucketSamplesByDay(oxygen);
 
   const dateKeys = getDateKeysInRange(range.startDate, range.endDate);
   return dateKeys.map((date) => {
-    const hrDaySamples = hrByDay.get(date) ?? [];
-    const restingSamples = restingByDay.get(date) ?? [];
-    const hrvDaySamples = hrvByDay.get(date) ?? [];
-    const respSamples = respByDay.get(date) ?? [];
-    const spo2Samples = spo2ByDay.get(date) ?? [];
+    const hrStats = statsSamples(hrByDay.get(date) ?? []);
+    const restingStats = statsSamples(restingByDay.get(date) ?? []);
+    const hrvStats = statsSamples(hrvByDay.get(date) ?? []);
+    const respStats = statsSamples(respByDay.get(date) ?? []);
+    const oxygenStats = statsSamples(oxygenByDay.get(date) ?? []);
 
     return {
       date,
-      heartRate: statsSamples(hrDaySamples),
-      restingHeartRate: restingSamples.length > 0
-        ? Math.round(restingSamples[restingSamples.length - 1].quantity * 10) / 10
-        : null,
-      hrv: hrvDaySamples.length > 0
-        ? Math.round(hrvDaySamples[hrvDaySamples.length - 1].quantity * 10) / 10
-        : null,
-      respiratoryRate: respSamples.length > 0
-        ? Math.round(respSamples[respSamples.length - 1].quantity * 10) / 10
-        : null,
-      oxygenSaturation: spo2Samples.length > 0
-        ? Math.round(spo2Samples[spo2Samples.length - 1].quantity * 100 * 10) / 10
-        : null,
+      heartRateAverage: hrStats.average || null,
+      heartRateMin: hrStats.min || null,
+      heartRateMax: hrStats.max || null,
+      restingHeartRate: restingStats.average || null,
+      heartRateVariabilitySDNN: hrvStats.average || null,
+      respiratoryRate: respStats.average || null,
+      oxygenSaturation: oxygenStats.average || null,
     };
   });
 }
 
-// ── Demographics ────────────────────────────────────────────────────
-
-const BIOLOGICAL_SEX_LABELS: Record<BiologicalSex, string | null> = {
-  [BiologicalSex.notSet]: null,
-  [BiologicalSex.female]: 'Female',
-  [BiologicalSex.male]: 'Male',
-  [BiologicalSex.other]: 'Other',
-};
-
-/**
- * Get the user's biological sex from HealthKit.
- * Returns null if not set or unavailable.
- */
-export async function getBiologicalSex(): Promise<string | null> {
+export async function getBiologicalSex(): Promise<'male' | 'female' | 'other' | null> {
   if (!isIOS()) return null;
+
   try {
     const sex = await hkGetBiologicalSex();
-    return BIOLOGICAL_SEX_LABELS[sex] ?? null;
+    switch (sex) {
+      case BiologicalSex.male:
+        return 'male';
+      case BiologicalSex.female:
+        return 'female';
+      case BiologicalSex.other:
+        return 'other';
+      default:
+        return null;
+    }
   } catch {
     return null;
   }
 }
 
-/**
- * Get the user's date of birth from HealthKit.
- * Returns ISO date string or null if not set.
- */
-export async function getDateOfBirth(): Promise<string | null> {
+export async function getDateOfBirth(): Promise<Date | null> {
   if (!isIOS()) return null;
+
   try {
-    const dob = await hkGetDateOfBirth();
-    if (!dob || dob.getTime() === 0) return null;
-    return dob.toISOString().split('T')[0];
+    return await hkGetDateOfBirth();
   } catch {
     return null;
   }
 }
 
-/**
- * Get demographics (age + biological sex) from HealthKit.
- * Combines getDateOfBirth and getBiologicalSex into a single call.
- */
 export async function getDemographics(): Promise<HealthKitDemographics> {
-  const [dob, sex] = await Promise.all([getDateOfBirth(), getBiologicalSex()]);
+  const [biologicalSex, dateOfBirth] = await Promise.all([
+    getBiologicalSex(),
+    getDateOfBirth(),
+  ]);
 
   let age: number | null = null;
-  if (dob) {
-    const birthDate = new Date(dob);
-    const today = new Date();
-    age = today.getFullYear() - birthDate.getFullYear();
-    const monthDiff = today.getMonth() - birthDate.getMonth();
-    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
-      age--;
-    }
+  if (dateOfBirth) {
+    const now = new Date();
+    age = now.getFullYear() - dateOfBirth.getFullYear();
+    const hasHadBirthdayThisYear =
+      now.getMonth() > dateOfBirth.getMonth() ||
+      (now.getMonth() === dateOfBirth.getMonth() && now.getDate() >= dateOfBirth.getDate());
+    if (!hasHadBirthdayThisYear) age -= 1;
   }
 
   return {
     age,
-    dateOfBirth: dob,
-    biologicalSex: sex,
+    dateOfBirth: dateOfBirth ? dateOfBirth.toISOString().split('T')[0] : null,
+    biologicalSex,
   };
 }
