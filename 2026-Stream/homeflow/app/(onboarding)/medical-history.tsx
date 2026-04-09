@@ -564,15 +564,25 @@ export default function MedicalHistoryScreen() {
         console.warn('[MedicalHistory] prefill sync error:', err),
       );
 
-      // Build flat editable lists from the prefill (only BPH-relevant drug groups)
-      const medGroupKeys = ['alphaBlockers', 'fiveARIs', 'anticholinergics', 'beta3Agonists', 'otherBPH'] as const;
+      // Build flat editable lists from the prefill, including non-BPH meds
+      // pulled from SMART/HealthKit so the participant can confirm them too.
+      const medGroupKeys = [
+        'alphaBlockers',
+        'fiveARIs',
+        'anticholinergics',
+        'beta3Agonists',
+        'otherBPH',
+        'otherMedications',
+      ] as const;
       const medItems: EditableMedItem[] = [];
       for (const groupKey of medGroupKeys) {
         (prefill.medications[groupKey].value ?? []).forEach((m, i) => {
           const drugEntry = m.genericName
             ? BPH_DRUGS.find(d => d.generic === m.genericName!.toLowerCase())
             : undefined;
-          const brandName = drugEntry?.brands[0] ? capitalize(drugEntry.brands[0]) : undefined;
+          const brandName = groupKey === 'otherMedications'
+            ? undefined
+            : (drugEntry?.brands[0] ? capitalize(drugEntry.brands[0]) : undefined);
           medItems.push({ id: `${groupKey}_${i}`, name: m.name, brandName, groupKey });
         });
       }

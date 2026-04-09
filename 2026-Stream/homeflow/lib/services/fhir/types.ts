@@ -96,6 +96,7 @@ export interface MedicalHistoryPrefill {
     anticholinergics: PrefillEntry<ClassifiedMedication[]>;
     beta3Agonists: PrefillEntry<ClassifiedMedication[]>;
     otherBPH: PrefillEntry<ClassifiedMedication[]>;
+    otherMedications: PrefillEntry<ClassifiedMedication[]>;
   };
 
   surgicalHistory: {

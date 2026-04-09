@@ -7,6 +7,7 @@ import {
   ScrollView,
   ActivityIndicator,
   TouchableOpacity,
+  Alert,
 } from 'react-native';
 import { useRouter, type Href } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -26,6 +27,7 @@ import { VitalsSection } from '@/components/health/VitalsSection';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { useAppTheme } from '@/lib/theme/ThemeContext';
 import { FontSize, FontWeight } from '@/lib/theme/typography';
+import { syncSmartClinicalData } from '@/lib/services/smart';
 import { db, getAuth } from '@/src/services/firestore';
 
 type ClinicalNoteCard = {
@@ -93,6 +95,8 @@ function HealthContent() {
   const [clinicalNotes, setClinicalNotes] = useState<ClinicalNoteCard[]>([]);
   const [notesLoading, setNotesLoading] = useState(true);
   const [hasConnectedProvider, setHasConnectedProvider] = useState(false);
+  const [connectedProviderId, setConnectedProviderId] = useState<string | null>(null);
+  const [resyncing, setResyncing] = useState(false);
 
   useEffect(() => {
     const uid = getAuth().currentUser?.uid;
@@ -152,6 +156,7 @@ function HealthContent() {
 
     const unsubscribeProviders = onSnapshot(providerQuery, (snapshot) => {
       setHasConnectedProvider(!snapshot.empty);
+      setConnectedProviderId(snapshot.empty ? null : snapshot.docs[0].id);
     });
 
     return () => {
@@ -167,6 +172,29 @@ function HealthContent() {
     }
     return 'No clinical notes available yet.';
   }, [hasConnectedProvider, notesLoading]);
+
+  async function handleForceResync() {
+    if (!connectedProviderId || resyncing) return;
+
+    setResyncing(true);
+    try {
+      const result = await syncSmartClinicalData(connectedProviderId);
+      if (result.syncIssues?.length) {
+        const issueSummary = result.syncIssues
+          .map((issue) => `${issue.resourceType}: ${issue.error}`)
+          .join('\n');
+        throw new Error(issueSummary);
+      }
+      Alert.alert('SMART Sync Complete', 'Clinical records were re-synced successfully.');
+    } catch (resyncError) {
+      Alert.alert(
+        'SMART Sync Failed',
+        resyncError instanceof Error ? resyncError.message : 'Please try again.',
+      );
+    } finally {
+      setResyncing(false);
+    }
+  }
 
   if (isLoading) {
     return (
@@ -301,6 +329,23 @@ function HealthContent() {
               <Text style={styles.connectButtonText}>Connect Health System</Text>
             </TouchableOpacity>
           )}
+
+          {__DEV__ && hasConnectedProvider && connectedProviderId ? (
+            <TouchableOpacity
+              activeOpacity={0.7}
+              style={[
+                styles.connectButton,
+                styles.forceResyncButton,
+                { backgroundColor: c.secondaryFill },
+              ]}
+              onPress={handleForceResync}
+              disabled={resyncing}
+            >
+              <Text style={[styles.forceResyncButtonText, { color: c.textPrimary }]}>
+                {resyncing ? 'Re-syncing…' : 'Force Resync'}
+              </Text>
+            </TouchableOpacity>
+          ) : null}
         </View>
 
         <View style={styles.spacerBottom} />
@@ -418,6 +463,13 @@ const styles = StyleSheet.create({
   },
   connectButtonText: {
     color: '#FFFFFF',
+    fontSize: FontSize.subhead,
+    fontWeight: FontWeight.semibold,
+  },
+  forceResyncButton: {
+    marginTop: 12,
+  },
+  forceResyncButtonText: {
     fontSize: FontSize.subhead,
     fontWeight: FontWeight.semibold,
   },

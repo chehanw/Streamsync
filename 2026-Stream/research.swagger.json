@@ -2,8 +2,21 @@
   "swagger": "2.0",
   "info": {
     "title": "api/research.proto",
-    "version": "version not set"
+    "version": "version not set",
+    "description": "Streamsync research export API for bladder outlet and UDS dashboards. Throne exports are ingested nightly at 12:00 AM America/Los_Angeles."
   },
+  "x-streamsync-supportedStudies": [
+    {
+      "key": "bladder",
+      "label": "Streamsync bladder outlet",
+      "studyId": "dr-wong-biodesign-urinary-flow-rate-1"
+    },
+    {
+      "key": "uds",
+      "label": "Streamsync UDS",
+      "studyId": "streamsync-uds"
+    }
+  ],
   "tags": [
     {
       "name": "Research"
@@ -128,7 +141,8 @@
       "type": "object",
       "properties": {
         "studyId": {
-          "type": "string"
+          "type": "string",
+          "description": "Research study identifier. Supported Streamsync values include dr-wong-biodesign-urinary-flow-rate-1 and streamsync-uds."
         },
         "gtTs": {
           "type": "string",
@@ -236,7 +250,8 @@
       "type": "object",
       "properties": {
         "studyId": {
-          "type": "string"
+          "type": "string",
+          "description": "Research study identifier. Supported Streamsync values include dr-wong-biodesign-urinary-flow-rate-1 and streamsync-uds."
         }
       },
       "title": "StudyMetadata RPCs"

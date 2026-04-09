@@ -15,6 +15,21 @@ const FUNCTIONS_BASE_URL =
   process.env.EXPO_PUBLIC_FUNCTIONS_BASE_URL ||
   'https://us-central1-streamsync-8ae79.cloudfunctions.net';
 
+const DEFAULT_SMART_SCOPES = [
+  'openid',
+  'offline_access',
+  'launch/patient',
+  'patient/Patient.read',
+  'patient/MedicationRequest.read',
+  'patient/Observation.read',
+  'patient/AllergyIntolerance.read',
+  'patient/Condition.read',
+  'patient/Procedure.read',
+  'patient/DocumentReference.read',
+  'patient/DiagnosticReport.read',
+  'patient/Binary.read',
+];
+
 interface AuthorizeUrlResponse {
   url: string;
 }
@@ -123,18 +138,7 @@ export async function connectSmartHealthSystem(
   ]);
   const codeChallenge = await toCodeChallenge(codeVerifier);
 
-  const scope = [
-    'openid',
-    'offline_access',
-    'patient/Patient.read',
-    'patient/MedicationRequest.read',
-    'patient/Observation.read',
-    'patient/AllergyIntolerance.read',
-    'patient/Condition.read',
-    'patient/Procedure.read',
-    'patient/DocumentReference.read',
-    'patient/Binary.read',
-  ].join(' ');
+  const scope = DEFAULT_SMART_SCOPES.join(' ');
 
   const authorize = await getJson<AuthorizeUrlResponse>('smartAuthorizeUrl', {
     providerId: healthSystem.id,

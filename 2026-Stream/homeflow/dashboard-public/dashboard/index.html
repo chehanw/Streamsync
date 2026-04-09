@@ -37,11 +37,7 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 .topbar-search input{background:none;border:none;outline:none;font-family:var(--font);font-size:13px;color:var(--text1);width:100%;}
 .topbar-search input::placeholder{color:var(--text3);}
 .topbar-right{display:flex;align-items:center;gap:10px;}
-.icon-btn{width:34px;height:34px;border-radius:50%;background:var(--glass);border:1px solid var(--glass-border);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:15px;transition:all .15s;position:relative;}
-.icon-btn:hover{background:var(--glass-hover);border-color:rgba(56,130,255,0.3);}
-.notif-dot{position:absolute;top:5px;right:5px;width:7px;height:7px;border-radius:50%;background:var(--red);border:1.5px solid var(--bg1);}
-.doctor-pill{display:flex;align-items:center;gap:8px;background:var(--glass);border:1px solid var(--glass-border);border-radius:24px;padding:5px 12px 5px 6px;cursor:pointer;transition:all .15s;}
-.doctor-pill:hover{border-color:rgba(56,130,255,0.4);}
+.doctor-pill{display:flex;align-items:center;gap:8px;background:var(--glass);border:1px solid var(--glass-border);border-radius:24px;padding:5px 12px 5px 6px;}
 .pill-av{width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--teal));display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#fff;}
 .pill-name{font-size:12.5px;font-weight:600;color:var(--text1);}
 .page{display:none;padding:24px 28px;}
@@ -201,11 +197,29 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 .toast{position:fixed;bottom:28px;right:28px;z-index:9999;background:linear-gradient(135deg,#0E1C3D,#0A1530);border:1px solid var(--glass-border);border-radius:12px;padding:14px 20px;display:flex;align-items:center;gap:12px;box-shadow:0 8px 32px rgba(0,0,0,0.5);color:var(--text1);font-size:13px;font-weight:600;transform:translateY(80px);opacity:0;transition:all .35s cubic-bezier(0.22,1,0.36,1);pointer-events:none;}
 .toast.show{transform:translateY(0);opacity:1;}
 .toast-icon{font-size:18px;}
-.fb-status{display:flex;align-items:center;gap:6px;font-size:11px;font-weight:600;color:var(--text3);padding:4px 10px;border-radius:20px;background:var(--glass);border:1px solid var(--glass-border);}
-.fb-dot{width:7px;height:7px;border-radius:50%;background:var(--text3);transition:background .3s;}
-.fb-dot.connected{background:var(--green);box-shadow:0 0 6px rgba(34,217,119,0.5);}
-.fb-dot.loading{background:var(--amber);animation:pulse 1s infinite;}
-.fb-dot.error{background:var(--red);}
+.study-switcher{display:flex;align-items:center;gap:8px;background:var(--glass);border:1px solid var(--glass-border);border-radius:24px;padding:6px 12px;}
+.study-switcher label{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text3);}
+.study-select{appearance:none;-webkit-appearance:none;background:transparent;border:none;outline:none;color:var(--text1);font-family:var(--font);font-size:12.5px;font-weight:700;padding-right:16px;cursor:pointer;}
+.study-select option{color:#0A1530;}
+.study-note{background:linear-gradient(135deg,rgba(14,28,61,0.9),rgba(10,21,48,0.9));border:1px solid var(--glass-border);border-radius:var(--r);padding:16px 18px;margin-bottom:16px;color:var(--text2);font-size:12.5px;line-height:1.6;}
+.study-note strong{color:var(--text1);}
+.uds-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px;flex-wrap:wrap;}
+.uds-table-head,.uds-row{display:grid;grid-template-columns:minmax(220px,2.4fr) minmax(120px,1fr) minmax(120px,1fr) minmax(170px,1.4fr) minmax(120px,1fr);gap:12px;align-items:center;}
+.uds-table-head{padding:8px 16px;color:#5B7BAA;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;}
+.uds-row{padding:16px;}
+.uds-participant-meta{font-size:11px;color:var(--text2);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.uds-status{display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border-radius:999px;border:1px solid var(--glass-border);font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;}
+.uds-status.active{color:var(--green);background:rgba(34,217,119,0.12);border-color:rgba(34,217,119,0.28);}
+.uds-status.pending{color:var(--amber);background:rgba(255,176,32,0.12);border-color:rgba(255,176,32,0.28);}
+.uds-status.overdue{color:var(--red);background:rgba(255,77,109,0.12);border-color:rgba(255,77,109,0.28);}
+.uds-cell-label{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:3px;}
+.uds-cell-value{font-size:14px;font-weight:700;color:var(--text1);}
+.uds-cell-sub{font-size:10.5px;color:var(--text2);margin-top:3px;}
+.uds-create-form{display:flex;flex-direction:column;gap:10px;margin-top:14px;}
+.uds-create-form textarea{width:100%;min-height:120px;border-radius:12px;border:1px solid var(--glass-border);background:rgba(255,255,255,0.04);color:var(--text1);padding:12px 14px;font-family:var(--font);font-size:13px;resize:vertical;}
+.uds-create-form textarea:focus{outline:none;border-color:rgba(56,130,255,0.6);box-shadow:0 0 0 3px rgba(56,130,255,0.08);}
+.uds-empty{padding:52px 20px;text-align:center;color:var(--text3);}
+.uds-highlight{border-color:rgba(56,130,255,0.55) !important;box-shadow:0 0 0 3px rgba(56,130,255,0.08);}
 ::-webkit-scrollbar{width:5px;}
 ::-webkit-scrollbar-track{background:transparent;}
 ::-webkit-scrollbar-thumb{background:rgba(56,130,255,0.2);border-radius:4px;}
@@ -254,15 +268,11 @@ input, textarea { -webkit-user-select: text; user-select: text; }
     <div class="nav-item" id="nav-patients" onclick="showPage('overview')" role="button" aria-label="Patients" onkeydown="if(event.key==='Enter'||event.key===' ')this.click()" tabindex="0">
       <span class="nav-icon">👥</span> Patients
     </div>
-    <div class="nav-item" id="nav-cohort" onclick="showPage('cohort')" role="button" aria-label="Cohort Trends" onkeydown="if(event.key==='Enter'||event.key===' ')this.click()" tabindex="0">
-      <span class="nav-icon">📊</span> Cohort Trends
-    </div>
     <div class="nav-label">Tools</div>
     <div class="nav-item" id="nav-alerts" onclick="showPage('alerts')" role="button" aria-label="Alerts" onkeydown="if(event.key==='Enter'||event.key===' ')this.click()" tabindex="0">
       <span class="nav-icon">🔔</span> Alerts
       <span class="nav-badge" id="alert-badge">3</span>
     </div>
-    <div class="nav-item" id="nav-reports" onclick="showPage('reports')" role="button" aria-label="Reports"><span class="nav-icon">📋</span> Reports</div>
     <div class="nav-item" id="nav-settings" onclick="showPage('settings')" role="button" aria-label="Settings"><span class="nav-icon">⚙️</span> Settings</div>
   </nav>
   <div class="sidebar-footer">
@@ -278,27 +288,29 @@ input, textarea { -webkit-user-select: text; user-select: text; }
   <div class="topbar">
     <div class="topbar-left">
       <div class="page-title" id="top-title">Clinician Dashboard</div>
+      <div class="study-switcher">
+        <label for="study-select">Study</label>
+        <select id="study-select" class="study-select" onchange="switchStudy(this.value)" aria-label="Select research study">
+          <option value="bladder">Streamsync bladder outlet</option>
+          <option value="uds">Streamsync UDS</option>
+        </select>
+      </div>
     </div>
     <div class="topbar-search">
       <span style="color:var(--text3);font-size:13px">🔍</span>
       <input type="text" id="patient-search" placeholder="Search Patients…" oninput="(function(v){clearTimeout(window._searchDebounce);window._searchDebounce=setTimeout(function(){searchPatients(v);},200);})(this.value)" aria-label="Search patients">
     </div>
     <div class="topbar-right">
-      <div class="fb-status" id="fb-status">
-        <div class="fb-dot loading" id="fb-dot"></div>
-        <span id="fb-label">Connecting…</span>
-      </div>
-      <div class="icon-btn">🔔<div class="notif-dot"></div></div>
       <div class="doctor-pill">
         <div class="pill-av">DW</div>
         <span class="pill-name" id="auth-user-label">Dr. Wong</span>
-        <span style="color:var(--text3);font-size:11px">⌄</span>
       </div>
       <button id="auth-signout-btn" onclick="signOut()" aria-label="Sign out" style="display:none;padding:6px 12px;border-radius:8px;font-size:12px;font-weight:600;background:rgba(255,77,109,0.12);border:1px solid rgba(255,77,109,0.3);color:var(--red);cursor:pointer;font-family:var(--font)">Sign Out</button>
     </div>
   </div>
 
   <div id="page-overview" class="page active">
+    <div id="overview-bladder-view">
     <div class="overview-stats" style="grid-template-columns:repeat(3,1fr)">
       <div class="ov-stat s-blue">
         <div class="ov-stat-label">Total Patients</div>
@@ -367,6 +379,50 @@ input, textarea { -webkit-user-select: text; user-select: text; }
         <div style="font-size:28px;margin-bottom:10px">⏳</div>
         <div style="font-size:13px;font-weight:600;color:var(--text2)">Loading patients from Firestore…</div>
       </div>
+    </div>
+    </div>
+    <div id="overview-uds-view" style="display:none">
+      <div class="overview-stats" style="grid-template-columns:repeat(4,1fr)">
+        <div class="ov-stat s-blue">
+          <div class="ov-stat-label">Total Participants</div>
+          <div class="ov-stat-val" id="uds-stat-total">0</div>
+          <div class="ov-stat-sub">Active and pending UDS participants</div>
+        </div>
+        <div class="ov-stat s-green">
+          <div class="ov-stat-label">Recent Throne Input</div>
+          <div class="ov-stat-val" id="uds-stat-recent" style="color:var(--green)">0</div>
+          <div class="ov-stat-sub">Void input within the last 48 hours</div>
+        </div>
+        <div class="ov-stat s-amber">
+          <div class="ov-stat-label">Pending Setup</div>
+          <div class="ov-stat-val" id="uds-stat-pending" style="color:var(--amber)">0</div>
+          <div class="ov-stat-sub">Created by email, awaiting activation</div>
+        </div>
+        <div class="ov-stat s-red">
+          <div class="ov-stat-label">48h Alerts</div>
+          <div class="ov-stat-val" id="uds-stat-alerts" style="color:var(--red)">0</div>
+          <div class="ov-stat-sub">Participants missing recent Throne data</div>
+        </div>
+      </div>
+      <div class="study-note">
+        <strong>Streamsync UDS</strong> tracks enrolled participants, enrollment age, and the most recent Throne voiding sync.
+        Throne alerting is based on a <strong>48 hour</strong> inactivity threshold, and participant registry entries can be created from the settings page by email.
+      </div>
+      <div class="uds-toolbar">
+        <div style="font-size:16px;font-weight:700;color:var(--text1)">Participant Monitoring</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="export-btn export-btn-csv" onclick="exportCSV()"><span>📊</span> Export UDS CSV</button>
+          <button class="compact-btn" onclick="showPage('settings');setTimeout(function(){document.getElementById('uds-create-emails')?.focus();},120)">Create Participants</button>
+        </div>
+      </div>
+      <div class="uds-table-head">
+        <div>Participant</div>
+        <div>Enrollment</div>
+        <div>Days Since Enrollment</div>
+        <div>Last Throne Sync</div>
+        <div>Status</div>
+      </div>
+      <div class="patient-rows" id="uds-participant-rows"></div>
     </div>
   </div>
 
@@ -453,37 +509,6 @@ input, textarea { -webkit-user-select: text; user-select: text; }
     </div>
   </div>
 
-  <div id="page-cohort" class="page">
-    <div class="cohort-filter">
-      <span class="cf-label">Procedure:</span>
-      <button class="chip active" onclick="toggleChip(this,'proc')">All</button>
-      <button class="chip" onclick="toggleChip(this,'proc')">TURP</button>
-      <button class="chip" onclick="toggleChip(this,'proc')">HoLEP</button>
-      <button class="chip" onclick="toggleChip(this,'proc')">UroLift</button>
-      <div style="width:1px;height:20px;background:var(--glass-border);margin:0 4px"></div>
-      <span class="cf-label">Period:</span>
-      <button class="chip active" onclick="toggleChip(this,'period')">All time</button>
-      <button class="chip" onclick="toggleChip(this,'period')">3 months</button>
-      <button class="chip" onclick="toggleChip(this,'period')">6 months</button>
-      <button class="chip" onclick="toggleChip(this,'period')">1 year</button>
-    </div>
-    <div class="cohort-stats">
-      <div class="cstat c-blue"><div class="cstat-icon">👥</div><div class="cstat-lbl">Cohort Size</div><div class="cstat-val" id="cstat-size">5</div><div class="cstat-sub">Active patients</div></div>
-      <div class="cstat c-teal"><div class="cstat-icon">📉</div><div class="cstat-lbl">Mean IPSS Δ</div><div class="cstat-val" style="color:var(--green)">−9.2</div><div class="cstat-sub">Average improvement</div></div>
-      <div class="cstat c-green"><div class="cstat-icon">💧</div><div class="cstat-lbl">Qmax Gain</div><div class="cstat-val" id="cstat-qmax" style="color:var(--green)">+8.1</div><div class="cstat-sub">mL/s average</div></div>
-      <div class="cstat c-amber"><div class="cstat-icon">📡</div><div class="cstat-lbl">Total Sessions</div><div class="cstat-val" id="cstat-sessions">—</div><div class="cstat-sub">Throne sessions logged</div></div>
-    </div>
-    <div class="grid-2" style="margin-bottom:16px">
-      <div class="chart-card"><div class="cc-label">Primary Outcome</div><div class="cc-title">IPSS Score by Procedure</div><canvas id="cohortIPSS" height="160" role="img" aria-label="Cohort IPSS score chart"></canvas></div>
-      <div class="chart-card"><div class="cc-label">Urodynamics</div><div class="cc-title">Qmax Recovery</div><canvas id="cohortQmax" height="160" role="img" aria-label="Cohort Qmax recovery chart"></canvas></div>
-    </div>
-    <div class="grid-3">
-      <div class="chart-card"><div class="cc-label">Wearable</div><div class="cc-title">Sleep Quality</div><canvas id="cohortSleep" height="130" role="img" aria-label="Cohort sleep quality chart"></canvas></div>
-      <div class="chart-card"><div class="cc-label">Wearable</div><div class="cc-title">Nocturia Reduction</div><canvas id="cohortNoc" height="130" role="img" aria-label="Cohort nocturia reduction chart"></canvas></div>
-      <div class="chart-card"><div class="cc-label">Wearable</div><div class="cc-title">Activity Recovery</div><canvas id="cohortSteps" height="130" role="img" aria-label="Cohort activity recovery chart"></canvas></div>
-    </div>
-  </div>
-
   <div id="page-alerts" class="page">
     <div style="margin-bottom:18px;display:flex;align-items:center;justify-content:space-between">
       <div style="font-size:16px;font-weight:700;color:var(--text1)">Active Alerts</div>
@@ -497,22 +522,25 @@ input, textarea { -webkit-user-select: text; user-select: text; }
     </div>
   </div>
 
-  <div id="page-reports" class="page">
-    <div style="margin-bottom:20px;font-size:16px;font-weight:700;color:var(--text1)">Reports</div>
-    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px">
-      <div class="pt-card" style="padding:22px;cursor:default"><div style="font-size:28px;margin-bottom:12px">📊</div><div style="font-size:14px;font-weight:700;margin-bottom:5px">Cohort Summary</div><div style="font-size:12px;color:var(--text2);margin-bottom:14px">All-patient outcomes across IPSS, Qmax, and wearable metrics.</div><button class="compact-btn" style="width:100%;justify-content:center" onclick="exportPDF()">Generate PDF</button></div>
-      <div class="pt-card" style="padding:22px;cursor:default"><div style="font-size:28px;margin-bottom:12px">👤</div><div style="font-size:14px;font-weight:700;margin-bottom:5px">Individual Patient Report</div><div style="font-size:12px;color:var(--text2);margin-bottom:14px">Full longitudinal breakdown for a single patient with charts.</div><button class="compact-btn" style="width:100%;justify-content:center" onclick="openPatient(currentPatientKey||'robertk')">View Patient Report</button></div>
-      <div class="pt-card" style="padding:22px;cursor:default"><div style="font-size:28px;margin-bottom:12px">📤</div><div style="font-size:14px;font-weight:700;margin-bottom:5px">Export Data</div><div style="font-size:12px;color:var(--text2);margin-bottom:14px">Download raw CSV of Throne + Apple Watch data for all patients.</div><button class="compact-btn" style="width:100%;justify-content:center" onclick="exportCSV()">Export CSV</button></div>
-    </div>
-  </div>
-
   <div id="page-settings" class="page">
     <div style="margin-bottom:20px;font-size:16px;font-weight:700;color:var(--text1)">Settings</div>
     <div style="display:flex;flex-direction:column;gap:10px;max-width:560px">
       <div class="pt-card" style="padding:18px 22px;cursor:default"><div style="font-size:13px;font-weight:700;margin-bottom:2px">Clinician Profile</div><div style="font-size:12px;color:var(--text2);margin-bottom:14px">Dr. Daniel Wong · Urologist · Stanford Medicine</div><button class="compact-btn">Edit Profile</button></div>
-      <div class="pt-card" style="padding:18px 22px;cursor:default"><div style="font-size:13px;font-weight:700;margin-bottom:2px">Alert Thresholds</div><div style="font-size:12px;color:var(--text2);margin-bottom:14px">Sync overdue after <strong style="color:var(--text1)">24 hours</strong> · IPSS flag above <strong style="color:var(--text1)">20</strong></div><button class="compact-btn">Configure</button></div>
-      <div class="pt-card" style="padding:18px 22px;cursor:default"><div style="font-size:13px;font-weight:700;margin-bottom:2px">Firebase Connection</div><div style="font-size:12px;color:var(--text2);margin-bottom:14px">Study: <strong style="color:var(--text1)">dr-wong-biodesign-urinary-flow-rate-1</strong><br><span id="settings-fb-status">Checking…</span></div><button class="compact-btn" onclick="location.reload()">Reconnect</button></div>
+      <div class="pt-card" style="padding:18px 22px;cursor:default"><div style="font-size:13px;font-weight:700;margin-bottom:2px">Alert Thresholds</div><div id="settings-alert-threshold" style="font-size:12px;color:var(--text2);margin-bottom:14px">Sync overdue after <strong style="color:var(--text1)">24 hours</strong> · IPSS flag above <strong style="color:var(--text1)">20</strong></div><button class="compact-btn">Configure</button></div>
+      <div class="pt-card" style="padding:18px 22px;cursor:default"><div style="font-size:13px;font-weight:700;margin-bottom:2px">Firebase Connection</div><div style="font-size:12px;color:var(--text2);margin-bottom:14px">Study: <strong style="color:var(--text1)" id="settings-study-id">dr-wong-biodesign-urinary-flow-rate-1</strong><br><span id="settings-fb-status">Checking…</span></div><button class="compact-btn" onclick="location.reload()">Reconnect</button></div>
       <div class="pt-card" style="padding:18px 22px;cursor:default"><div style="font-size:13px;font-weight:700;margin-bottom:2px">Connected Devices</div><div style="font-size:12px;color:var(--text2);margin-bottom:14px"><span style="color:var(--green)">●</span> Throne Smart Toilet API &nbsp;·&nbsp; <span style="color:var(--green)">●</span> Apple HealthKit</div><button class="compact-btn">Manage Integrations</button></div>
+      <div class="pt-card" id="settings-uds-panel" style="display:none;padding:18px 22px;cursor:default">
+        <div style="font-size:13px;font-weight:700;margin-bottom:2px">Create UDS Participants</div>
+        <div style="font-size:12px;color:var(--text2);margin-bottom:8px">Enter one or more participant email addresses. This creates real Firebase Auth users for the Streamsync UDS study, seeds `users/{uid}` with a `throneUserId` based on the enrollment email, and registers each participant for researcher adherence monitoring.</div>
+        <div style="font-size:11px;color:var(--text3)">One email per line, or separate multiple emails with commas. Existing users are reused when their current Throne ID is compatible.</div>
+        <div class="uds-create-form">
+          <textarea id="uds-create-emails" placeholder="participant1@example.com&#10;participant2@example.com"></textarea>
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
+            <div id="uds-create-hint" style="font-size:11px;color:var(--text3)">Pending participants will appear on the UDS dashboard immediately after creation.</div>
+            <button class="export-btn export-btn-pdf" id="uds-create-btn" onclick="createUdsParticipants()"><span>✚</span> Create Participants</button>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </main>
@@ -545,15 +573,6 @@ input, textarea { -webkit-user-select: text; user-select: text; }
   </div>
 </div>
 
-<!-- Debug panel — visible only when Firestore queries run; hides itself if all ok -->
-<div id="debug-panel" style="display:none;position:fixed;bottom:0;left:220px;right:0;background:rgba(6,13,31,0.97);border-top:1px solid rgba(255,77,109,0.3);padding:12px 20px;z-index:9998;max-height:180px;overflow-y:auto;">
-  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
-    <span style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:#FF4D6D">Firebase Debug</span>
-    <button onclick="document.getElementById('debug-panel').style.display='none'" style="background:none;border:none;color:#7A96C8;cursor:pointer;font-size:13px">✕ Close</button>
-  </div>
-  <div id="debug-log" style="font-size:11px;font-family:monospace;line-height:1.7"></div>
-</div>
-
 <div class="toast" id="toast"><span class="toast-icon" id="toast-icon">✅</span><span id="toast-msg">Done</span></div>
 <script>
 function sanitize(str) {
@@ -575,6 +594,25 @@ const MS_PER_DAY = 86400000;
 // Populated dynamically from Firestore in init()
 let patients = {};
 let SHORT_KEY_TO_SUFFIX = {};
+let allParticipants = [];
+let currentStudyKey = 'bladder';
+
+const STUDIES = {
+  bladder: {
+    key: 'bladder',
+    label: 'Streamsync bladder outlet',
+    dashboardTitle: 'Streamsync Bladder Outlet Dashboard',
+    studyId: 'dr-wong-biodesign-urinary-flow-rate-1',
+    throneAlertHours: 24,
+  },
+  uds: {
+    key: 'uds',
+    label: 'Streamsync UDS',
+    dashboardTitle: 'Streamsync UDS Dashboard',
+    studyId: 'streamsync-uds',
+    throneAlertHours: 48,
+  },
+};
 
 let trendChart, uroflowChart, sleepChartObj, hrChartObj, stepsChartObj;
 let isCompact = false;
@@ -584,6 +622,273 @@ let initComplete = false;
 function safeDestroyChart(chart) {
   if (chart) { try { chart.destroy(); } catch(e) { console.warn('Chart destroy error:', e); } }
   return null;
+}
+
+function getCurrentStudy() {
+  return STUDIES[currentStudyKey] || STUDIES.bladder;
+}
+
+function normalizeStudyValue(value) {
+  const raw = String(value || '').trim().toLowerCase();
+  if (!raw) return '';
+  if (raw === 'uds' || raw.includes('streamsync-uds') || raw.includes(' uds') || raw.endsWith('-uds')) return 'uds';
+  if (raw === 'bladder' || raw.includes('bladder') || raw.includes('outlet') || raw.includes('urinary-flow') || raw === STUDIES.bladder.studyId) return 'bladder';
+  return raw;
+}
+
+function inferStudyKey(record) {
+  const explicit = normalizeStudyValue(record?.studyKey || record?.studyId || record?.study || record?.studyName);
+  if (explicit === 'uds') return 'uds';
+  if (explicit === 'bladder') return 'bladder';
+  return 'bladder';
+}
+
+function patientMatchesStudy(patient, studyKey) {
+  const normalized = normalizeStudyValue(patient?.studyKey || patient?.studyId || patient?.study);
+  if (studyKey === 'uds') return normalized === 'uds';
+  return !normalized || normalized === 'bladder';
+}
+
+function getStudyParticipants(studyKey = currentStudyKey) {
+  return allParticipants.filter(({ shortKey }) => patientMatchesStudy(patients[shortKey], studyKey));
+}
+
+function getStudySessions(shortKey, studyKey = currentStudyKey) {
+  const sessions = window._sessionsByShortKey?.[shortKey] || [];
+  return sessions.filter((session) => {
+    const sessionStudy = normalizeStudyValue(session.studyId);
+    if (studyKey === 'uds') return sessionStudy === 'uds';
+    return sessionStudy !== 'uds';
+  });
+}
+
+function getEnrollmentDate(patient) {
+  return parseTs(patient?.enrolledAt) || parseTs(patient?.createdAt) || null;
+}
+
+function getDaysSince(date) {
+  if (!date || isNaN(date.getTime())) return null;
+  return Math.max(0, Math.floor((Date.now() - date.getTime()) / MS_PER_DAY));
+}
+
+function formatDaysSinceDate(date) {
+  const days = getDaysSince(date);
+  if (days === null) return '—';
+  return `${days}`;
+}
+
+function getLatestStudyVoidDate(shortKey, studyKey = currentStudyKey) {
+  const sessions = getStudySessions(shortKey, studyKey);
+  if (!sessions.length) return null;
+  return parseTs(sessions[sessions.length - 1].startTs);
+}
+
+function getVisiblePageName() {
+  return document.querySelector('.page.active')?.id?.replace('page-', '') || 'overview';
+}
+
+function getPageTitle(name) {
+  if (name === 'overview') return getCurrentStudy().dashboardTitle;
+  if (name === 'alerts') return `${getCurrentStudy().label} Alerts`;
+  if (name === 'settings') return `${getCurrentStudy().label} Settings`;
+  if (name === 'patient') return currentStudyKey === 'uds' ? getCurrentStudy().dashboardTitle : 'Patient Detail';
+  return getCurrentStudy().dashboardTitle;
+}
+
+function updateStudyChrome() {
+  const study = getCurrentStudy();
+  const select = document.getElementById('study-select');
+  if (select) select.value = currentStudyKey;
+
+  const bladderOverview = document.getElementById('overview-bladder-view');
+  const udsOverview = document.getElementById('overview-uds-view');
+  if (bladderOverview) bladderOverview.style.display = currentStudyKey === 'bladder' ? '' : 'none';
+  if (udsOverview) udsOverview.style.display = currentStudyKey === 'uds' ? '' : 'none';
+
+  const udsSettingsPanel = document.getElementById('settings-uds-panel');
+  if (udsSettingsPanel) udsSettingsPanel.style.display = currentStudyKey === 'uds' ? '' : 'none';
+
+  const settingsStudyId = document.getElementById('settings-study-id');
+  if (settingsStudyId) settingsStudyId.textContent = study.studyId;
+
+  const settingsThreshold = document.getElementById('settings-alert-threshold');
+  if (settingsThreshold) {
+    settingsThreshold.innerHTML = currentStudyKey === 'uds'
+      ? 'Throne overdue after <strong style="color:var(--text1)">48 hours</strong> · Email-created participants are marked pending until they connect'
+      : 'Sync overdue after <strong style="color:var(--text1)">24 hours</strong> · IPSS flag above <strong style="color:var(--text1)">20</strong>';
+  }
+
+  const titleEl = document.getElementById('top-title');
+  if (titleEl) titleEl.textContent = getPageTitle(getVisiblePageName());
+  document.title = `Streamsync — ${study.label}`;
+}
+
+function switchStudy(key) {
+  if (!STUDIES[key]) return;
+  currentStudyKey = key;
+  if (currentStudyKey === 'uds' && getVisiblePageName() === 'patient') {
+    showPage('overview');
+  }
+  updateStudyChrome();
+  renderUdsDashboard();
+  buildAlerts();
+}
+
+function renderUdsDashboard() {
+  const container = document.getElementById('uds-participant-rows');
+  if (!container) return;
+
+  const participantsForStudy = getStudyParticipants('uds');
+  const thresholdHours = STUDIES.uds.throneAlertHours;
+  const sorted = participantsForStudy.slice().sort((a, b) => {
+    const aDate = getEnrollmentDate(patients[a.shortKey]);
+    const bDate = getEnrollmentDate(patients[b.shortKey]);
+    return (bDate?.getTime() || 0) - (aDate?.getTime() || 0);
+  });
+
+  let activeRecent = 0;
+  let pendingCount = 0;
+  let alertCount = 0;
+  container.innerHTML = '';
+
+  if (!sorted.length) {
+    container.innerHTML = '<div class="uds-empty"><div style="font-size:32px;margin-bottom:10px">🧪</div><div style="font-size:14px;font-weight:700;color:var(--text2);margin-bottom:4px">No UDS participants yet</div><div style="font-size:12px">Create participant records from the settings page to start tracking this study.</div></div>';
+  } else {
+    sorted.forEach(({ shortKey }) => {
+      const patient = patients[shortKey];
+      const enrollmentDate = getEnrollmentDate(patient);
+      const daysSinceEnrollment = getDaysSince(enrollmentDate);
+      const lastVoidDate = getLatestStudyVoidDate(shortKey, 'uds');
+      const hoursSinceLastVoid = lastVoidDate ? (Date.now() - lastVoidDate.getTime()) / 3600000 : null;
+      const isPending = Boolean(patient.pendingInvite && !patient._uid);
+      const isAlert = !isPending && (!lastVoidDate || hoursSinceLastVoid > thresholdHours);
+
+      if (isPending) pendingCount++;
+      if (!isPending && lastVoidDate && hoursSinceLastVoid <= thresholdHours) activeRecent++;
+      if (isAlert) alertCount++;
+
+      const statusClass = isPending ? 'pending' : (isAlert ? 'overdue' : 'active');
+      const statusLabel = isPending ? 'Pending setup' : (isAlert ? '48h alert' : 'Active');
+      const lastSyncValue = lastVoidDate ? `${formatDaysSinceDate(lastVoidDate)} day${formatDaysSinceDate(lastVoidDate) === '1' ? '' : 's'}` : '—';
+      const lastSyncSub = lastVoidDate
+        ? `Last void ${lastVoidDate.toLocaleDateString(undefined, {month:'short', day:'numeric'})} at ${lastVoidDate.toLocaleTimeString(undefined, {hour:'2-digit', minute:'2-digit'})}`
+        : (isPending ? 'Waiting for participant activation' : 'No Throne input yet');
+
+      const row = document.createElement('div');
+      row.className = `pt-card ${isAlert ? 'urgent' : ''}`;
+      row.dataset.udsKey = shortKey;
+      row.innerHTML = `
+        <div class="uds-row">
+          <div>
+            <div class="pt-name">${sanitize(patient.name)}</div>
+            <div class="uds-participant-meta">${sanitize(patient.email || 'No email recorded')}</div>
+          </div>
+          <div>
+            <div class="uds-cell-label">Enrolled</div>
+            <div class="uds-cell-value">${enrollmentDate ? enrollmentDate.toLocaleDateString(undefined, {month:'short', day:'numeric', year:'numeric'}) : '—'}</div>
+          </div>
+          <div>
+            <div class="uds-cell-label">Days Since Enrollment</div>
+            <div class="uds-cell-value">${daysSinceEnrollment === null ? '—' : daysSinceEnrollment}</div>
+            <div class="uds-cell-sub">${daysSinceEnrollment === null ? 'Enrollment missing' : 'From participant registry'}</div>
+          </div>
+          <div>
+            <div class="uds-cell-label">Days Since Last Throne Sync</div>
+            <div class="uds-cell-value">${lastSyncValue}</div>
+            <div class="uds-cell-sub">${sanitize(lastSyncSub)}</div>
+          </div>
+          <div><span class="uds-status ${statusClass}">${sanitize(statusLabel)}</span></div>
+        </div>`;
+      container.appendChild(row);
+    });
+  }
+
+  const totalEl = document.getElementById('uds-stat-total');
+  const recentEl = document.getElementById('uds-stat-recent');
+  const pendingEl = document.getElementById('uds-stat-pending');
+  const alertsEl = document.getElementById('uds-stat-alerts');
+  if (totalEl) totalEl.textContent = String(sorted.length);
+  if (recentEl) recentEl.textContent = String(activeRecent);
+  if (pendingEl) pendingEl.textContent = String(pendingCount);
+  if (alertsEl) alertsEl.textContent = String(alertCount);
+}
+
+function focusUdsParticipant(shortKey) {
+  showPage('overview');
+  switchStudy('uds');
+  const row = document.querySelector(`[data-uds-key="${CSS.escape(shortKey)}"]`);
+  if (!row) return;
+  row.classList.add('uds-highlight');
+  row.scrollIntoView({behavior: 'smooth', block: 'center'});
+  setTimeout(() => row.classList.remove('uds-highlight'), 1800);
+}
+
+function addCreatedUdsParticipants(createdEntries) {
+  const timestamp = new Date().toISOString();
+  createdEntries.forEach((entry, idx) => {
+    const email = String(entry.email || '').trim().toLowerCase();
+    const uid = entry.uid || null;
+    if (!email || !uid) return;
+
+    const existing = allParticipants.find((participant) => participant.uid === uid || patients[participant.shortKey]?.email === email);
+    if (existing) {
+      const patient = patients[existing.shortKey];
+      if (patient) {
+        patient.studyKey = 'uds';
+        patient.studyId = STUDIES.uds.studyId;
+        patient.pendingInvite = false;
+        patient.email = email;
+        patient.enrolledAt = patient.enrolledAt || timestamp;
+        patient.createdAt = patient.createdAt || timestamp;
+      }
+      return;
+    }
+
+    const emailLocal = email.split('@')[0] || `uds${idx}`;
+    const baseName = emailLocal.replace(/[._-]+/g, ' ').trim() || email;
+    const name = baseName.split(/\s+/).map((part) => part ? part[0].toUpperCase() + part.slice(1) : '').join(' ');
+    let shortKey = email.replace(/[^a-z0-9]/g, '') || `uds${Date.now()}${idx}`;
+    while (patients[shortKey]) shortKey = `${shortKey}${idx}`;
+    const parts = name.trim().split(/\s+/);
+    const first = parts[0] || 'U';
+    const last = parts[parts.length - 1] || 'P';
+    let suffix = ((first[0] || 'u') + (last[0] || 'p')).toLowerCase();
+    while (Object.values(SHORT_KEY_TO_SUFFIX).includes(suffix)) suffix = `${suffix}${idx}`;
+    const initials = ((first[0] || 'U') + (last[0] || 'P')).toUpperCase();
+
+    patients[shortKey] = {
+      av: initials,
+      name: name || email,
+      suffix,
+      _uid: uid,
+      age: null,
+      phoneNumber: null,
+      email,
+      enrolledAt: timestamp,
+      createdAt: timestamp,
+      studyKey: 'uds',
+      studyId: STUDIES.uds.studyId,
+      pendingInvite: false,
+      mrn: null,
+      surg: 'UDS Study',
+      surg_cls: 'badge-teal',
+      pre: '—', opdate: '—', post: 'Enrolled', days: 0,
+      ipss:{pre:'—',post:'—',delta:'—',col:'var(--text2)'},
+      qmax:{pre:'—',post:'—',delta:'—',col:'var(--text2)'},
+      noc:{pre:'—',post:'—',delta:'—',col:'var(--text2)'},
+      sl:{pre:'—',post:'—',delta:'—',col:'var(--text2)'},
+      st:{pre:'—',post:'—',delta:'—',col:'var(--text2)'},
+      hr:{pre:'—',post:'—',delta:'—',col:'var(--text2)'},
+      hrv:{pre:'—',post:'—',delta:'—',col:'var(--text2)'},
+      vol:{pre:'—',post:'—',delta:'—',col:'var(--text2)'},
+      trend:[], qmaxArr:[], volArr:[], hrArr:[], hrvArr:[],
+    };
+    SHORT_KEY_TO_SUFFIX[shortKey] = suffix;
+    window._userIdByShortKey[shortKey] = uid;
+    window._sessionsByShortKey[shortKey] = window._sessionsByShortKey[shortKey] || [];
+    PATIENT_USER_IDS[shortKey] = uid;
+    allParticipants.push({shortKey, name: name || email, initials, suffix, uid});
+  });
 }
 
 // ── Avatar gradient pool ──────────────────────────────────────────────────────
@@ -819,7 +1124,7 @@ function searchPatients(val) {
   if (activeSort) activeSort.click();
 }
 
-const navPageMap={'nav-dashboard':'overview','nav-patients':'overview','nav-cohort':'cohort','nav-alerts':'alerts','nav-reports':'reports','nav-settings':'settings'};
+const navPageMap={'nav-dashboard':'overview','nav-patients':'overview','nav-alerts':'alerts','nav-settings':'settings'};
 
 function showPage(name) {
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
@@ -828,13 +1133,16 @@ function showPage(name) {
   Object.entries(navPageMap).forEach(([navId,pageName])=>{
     if(pageName===name){const el=document.getElementById(navId);if(el)el.classList.add('active');}
   });
-  const titles={overview:'Clinician Dashboard',patient:'Patient Detail',cohort:'Cohort Trends',alerts:'Alerts',reports:'Reports',settings:'Settings'};
-  const topTitleEl=document.getElementById('top-title'); if(topTitleEl) topTitleEl.textContent=titles[name]||'';
+  const topTitleEl=document.getElementById('top-title'); if(topTitleEl) topTitleEl.textContent=getPageTitle(name);
   if(name==='overview') initOverview();
-  if(name==='cohort') setTimeout(buildCohortCharts,80);
+  updateStudyChrome();
 }
 
 function openPatient(key) {
+  if (currentStudyKey === 'uds') {
+    focusUdsParticipant(key);
+    return;
+  }
   if (!initComplete) { showToast('Dashboard still loading — please wait', '⏳'); return; }
   const p = patients[key];
   if (!p) { showToast('Patient not found', '⚠️'); return; }
@@ -1094,23 +1402,6 @@ function buildSleepChart(shortKey) {
   }
 }
 
-const cohortCharts = {};
-function buildCohortCharts() {
-  const wks=['Pre-Op','Wk 2','Wk 4','Wk 8','Wk 12','Wk 16'];
-  const mkCfg=()=>({responsive:true,maintainAspectRatio:true,plugins:{legend:{labels:{color:'#7A96C8',font:{size:11},boxWidth:12}}},scales:{x:{grid:{color:'#1E3460'},ticks:{color:'#3D5880',font:{size:10}}},y:{grid:{color:'#1E3460'},ticks:{color:'#3D5880',font:{size:10}}}}});
-  [['cohortIPSS','line',[{label:'TURP',data:[28,22,17,12,9,7],borderColor:'#3882FF',backgroundColor:'rgba(56,130,255,0.1)',fill:true,borderWidth:2.5,tension:0.4,pointRadius:3},{label:'HoLEP',data:[30,25,20,15,11,9],borderColor:'#00C8A8',backgroundColor:'rgba(0,200,168,0.08)',fill:true,borderWidth:2.5,tension:0.4,pointRadius:3},{label:'UroLift',data:[26,22,19,16,14,13],borderColor:'#FFB020',backgroundColor:'rgba(255,176,32,0.08)',fill:true,borderWidth:2.5,tension:0.4,pointRadius:3}]],
-   ['cohortQmax','line',[{label:'TURP',data:[7.1,10.2,13.4,16.8,19.2,21.0],borderColor:'#3882FF',backgroundColor:'rgba(56,130,255,0.1)',fill:true,borderWidth:2.5,tension:0.4,pointRadius:3},{label:'HoLEP',data:[6.4,9.0,12.1,15.3,17.8,19.4],borderColor:'#00C8A8',backgroundColor:'rgba(0,200,168,0.08)',fill:true,borderWidth:2.5,tension:0.4,pointRadius:3},{label:'UroLift',data:[8.2,10.1,11.8,13.2,14.0,14.6],borderColor:'#FFB020',backgroundColor:'rgba(255,176,32,0.08)',fill:true,borderWidth:2.5,tension:0.4,pointRadius:3}]],
-   ['cohortSleep','line',[{label:'Avg Sleep %',data:[59,61,64,70,76,80],borderColor:'#A78BFA',backgroundColor:'rgba(167,139,250,0.12)',fill:true,borderWidth:2.5,tension:0.4,pointRadius:3}]],
-   ['cohortNoc','line',[{label:'Nocturia/night',data:[3.8,3.4,2.9,2.2,1.7,1.4],borderColor:'#00C8A8',backgroundColor:'rgba(0,200,168,0.1)',fill:true,borderWidth:2.5,tension:0.4,pointRadius:3}]],
-   ['cohortSteps','bar',[{label:'Steps/day',data:[3800,3600,4200,5100,6200,7000],backgroundColor:'rgba(56,130,255,0.25)',borderColor:'#3882FF',borderWidth:2,borderRadius:5}]]
-  ].forEach(([id,type,ds])=>{
-    cohortCharts[id] = safeDestroyChart(cohortCharts[id]);
-    const cohortCtx = document.getElementById(id)?.getContext('2d');
-    if(!cohortCtx) return;
-    cohortCharts[id]=new Chart(cohortCtx,{type,data:{labels:wks,datasets:ds},options:mkCfg()});
-  });
-}
-
 function dismissAlert(btn) {
   const card=btn.closest('.pt-card');
   card.style.opacity='0'; card.style.transform='translateX(30px)'; card.style.transition='all .3s';
@@ -1126,11 +1417,6 @@ function markAllRead() {
     setTimeout(()=>{card.style.opacity='0';card.style.transform='translateX(30px)';card.style.transition='all .3s';setTimeout(()=>card.remove(),300);},i*100);
   });
   setTimeout(()=>{document.getElementById('alerts-empty').style.display='block';const badge=document.getElementById('alert-badge');if(badge)badge.style.display='none';},600);
-}
-
-function toggleChip(el,g){
-  document.querySelectorAll('.chip').forEach(c=>{if(c.getAttribute('onclick')&&c.getAttribute('onclick').includes(g))c.classList.remove('active');});
-  el.classList.add('active');
 }
 
 let currentSort={key:null,dir:1};
@@ -1163,6 +1449,33 @@ function showToast(msg,icon='✅',duration=2600) {
 }
 
 function exportCSV() {
+  if (currentStudyKey === 'uds') {
+    const headers = ['Participant', 'Email', 'Study', 'Enrollment Date', 'Days Since Enrollment', 'Days Since Last Throne Sync', 'Status'];
+    const rows = getStudyParticipants('uds').map(({ shortKey }) => {
+      const patient = patients[shortKey];
+      const enrollmentDate = getEnrollmentDate(patient);
+      const lastVoidDate = getLatestStudyVoidDate(shortKey, 'uds');
+      const isPending = Boolean(patient.pendingInvite && !patient._uid);
+      const daysSinceLast = getDaysSince(lastVoidDate);
+      const isAlert = !isPending && (daysSinceLast === null || daysSinceLast > 2);
+      return [
+        patient.name,
+        patient.email || '—',
+        STUDIES.uds.label,
+        enrollmentDate ? enrollmentDate.toISOString() : '—',
+        enrollmentDate ? getDaysSince(enrollmentDate) : '—',
+        daysSinceLast === null ? '—' : daysSinceLast,
+        isPending ? 'pending' : (isAlert ? 'alert' : 'active'),
+      ];
+    });
+    const csv = [headers, ...rows].map((row) => row.map((value) => `"${String(value).replace(/"/g, '""')}"`).join(',')).join('\n');
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(new Blob([csv], {type: 'text/csv'}));
+    link.download = 'streamsync_uds_participants.csv';
+    link.click();
+    showToast('UDS participant CSV downloaded', '📊');
+    return;
+  }
 
   const rows=Object.values(patients)
     .map(p=>[
@@ -1206,16 +1519,6 @@ function exportOverviewPDF() {
   setTimeout(() => window.print(), 400);
 }
 
-function exportPDF() {
-  // Show cohort page, print it, then stay on current page
-  const prev = document.querySelector('.page.active')?.id || 'page-overview';
-  showPage('cohort');
-  setTimeout(() => {
-    window.print();
-    setTimeout(() => showPage(prev.replace('page-','')), 500);
-  }, 400);
-  showToast('Opening print dialog…','📄',2500);
-}
 function exportPatientPDF() {
   const name = patients[currentPatientKey]?.name || 'Patient';
   showToast(`Preparing PDF for ${name}…`,'📄',2500);
@@ -1354,9 +1657,8 @@ async function fetchHKSyncSummary(uid) {
 
 
 function setFbStatus(state, text) {
-  const dot=document.getElementById('fb-dot'), lbl=document.getElementById('fb-label'), set=document.getElementById('settings-fb-status');
-  if(dot) dot.className='fb-dot '+state;
-  if(lbl) lbl.textContent=text;
+  void state;
+  const set=document.getElementById('settings-fb-status');
   if(set) set.textContent=text;
 }
 function parseTs(ts) {
@@ -1676,6 +1978,7 @@ async function loadHealthKitForCard(shortKey, userId) {
 async function loadAllHealthKit() {
   const promises = Object.keys(PATIENT_USER_IDS).map(shortKey => {
     const userId = PATIENT_USER_IDS[shortKey];
+    if (!userId) return Promise.resolve(null);
     return loadHealthKitForCard(shortKey, userId);
   });
   await Promise.allSettled(promises);
@@ -1691,15 +1994,16 @@ function buildAlerts() {
   list.innerHTML = '';
   let alertCount = 0;
 
-  for (const shortKey of Object.keys(SHORT_KEY_TO_SUFFIX)) {
-    const sessions = window._sessionsByShortKey[shortKey] || [];
-    const throneSyncState = window._throneSyncByShortKey[shortKey] || null;
+  for (const { shortKey } of getStudyParticipants(currentStudyKey)) {
+    const sessions = getStudySessions(shortKey, currentStudyKey);
     const hkSummary = window._hkSyncByShortKey[shortKey] || null;
     const p = patients[shortKey];
     if (!p) continue;
+    if (currentStudyKey === 'uds' && p.pendingInvite && !p._uid) continue;
 
-    const throneDate = throneSyncState?.lastVoidAt || (sessions.length ? parseTs(sessions[sessions.length - 1].startTs) : null);
+    const throneDate = sessions.length ? parseTs(sessions[sessions.length - 1].startTs) : null;
     const hkDate = hkSummary?.latestDate || null;
+    const throneThreshold = getCurrentStudy().throneAlertHours;
 
     if (!throneDate && !sessions.length) {
       // No sessions at all
@@ -1711,13 +2015,13 @@ function buildAlerts() {
         <div style="width:40px;height:40px;border-radius:50%;background:rgba(122,150,200,0.12);border:1px solid var(--glass-border);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">📡</div>
         <div style="flex:1">
           <div style="font-size:13.5px;font-weight:700;color:var(--text1);margin-bottom:3px">No Sessions — ${sanitize(p.name)}</div>
-          <div style="font-size:12px;color:var(--text2)">No completed Throne sessions recorded yet.</div>
+          <div style="font-size:12px;color:var(--text2)">${currentStudyKey === 'uds' ? 'No UDS Throne inputs recorded in the last 48 hours.' : 'No completed Throne sessions recorded yet.'}</div>
           <div style="margin-top:10px"><button class="compact-btn alert-open-patient-btn" data-key="${sanitize(shortKey)}">View Patient</button></div>
         </div></div>`;
       list.appendChild(div);
     } else if (throneDate) {
       const hrs = (Date.now() - throneDate.getTime()) / 3600000;
-      if (hrs > 24) {
+      if (hrs > throneThreshold) {
         alertCount++;
         const label = hrs > 48 ? `${Math.floor(hrs/24)} days ago` : `${Math.floor(hrs)} hrs ago`;
         const isOverdue = hrs > 48;
@@ -1728,7 +2032,7 @@ function buildAlerts() {
           <div style="width:40px;height:40px;border-radius:50%;background:rgba(${isOverdue?'255,77,109':'255,176,32'},0.15);border:1px solid rgba(${isOverdue?'255,77,109':'255,176,32'},0.3);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">${isOverdue?'⚠️':'📡'}</div>
           <div style="flex:1">
             <div style="font-size:13.5px;font-weight:700;color:var(--text1);margin-bottom:3px">${isOverdue?'Overdue':'Delayed'} Void Activity — ${sanitize(p.name)}</div>
-            <div style="font-size:12px;color:var(--text2)">Last known void was <span style="color:${isOverdue?'var(--red)':'var(--amber)'};font-weight:700">${label}</span>. ${isOverdue?'Immediate follow-up recommended.':'Consider checking in.'}</div>
+            <div style="font-size:12px;color:var(--text2)">Last known void was <span style="color:${isOverdue?'var(--red)':'var(--amber)'};font-weight:700">${label}</span>. ${currentStudyKey === 'uds' ? 'UDS follow-up recommended.' : (isOverdue?'Immediate follow-up recommended.':'Consider checking in.')}</div>
             <div style="margin-top:10px"><button class="compact-btn alert-open-patient-btn" data-key="${sanitize(shortKey)}">View Patient</button></div>
           </div>
           <div style="font-size:11px;color:var(--text3);white-space:nowrap">${label}</div>
@@ -1737,7 +2041,7 @@ function buildAlerts() {
       }
     }
 
-    if (hkDate) {
+    if (currentStudyKey === 'bladder' && hkDate) {
       const hkHours = (Date.now() - hkDate.getTime()) / 3600000;
       if (hkHours > 48) {
         alertCount++;
@@ -1763,9 +2067,11 @@ function buildAlerts() {
     if (empty) empty.style.display = 'block';
   } else {
     if (empty) empty.style.display = 'none';
-    // Update nav badge
-    const badge = document.querySelector('.nav-badge');
-    if (badge) badge.textContent = alertCount;
+  }
+  const badge = document.querySelector('.nav-badge');
+  if (badge) {
+    badge.textContent = String(alertCount);
+    badge.style.display = alertCount > 0 ? '' : 'none';
   }
 }
 
@@ -1778,17 +2084,99 @@ document.addEventListener('click', function(e) {
   }
 });
 
-// ── debug panel ───────────────────────────────────────────────────────────────
 function dbg(msg, isError) {
   console[isError ? 'error' : 'log']('[StreamSync]', msg);
-  const panel = document.getElementById('debug-panel');
-  const log   = document.getElementById('debug-log');
-  if (!panel || !log) return;
-  panel.style.display = 'block';
-  const line = document.createElement('div');
-  line.style.color = isError ? '#FF4D6D' : '#7A96C8';
-  line.textContent = msg;
-  log.appendChild(line);
+}
+
+function getFunctionUrl(name) {
+  const overrideBase = window.localStorage?.getItem('streamsyncFunctionsBaseUrl');
+  if (overrideBase) {
+    return `${overrideBase.replace(/\/$/, '')}/${name}`;
+  }
+  return `https://us-central1-${firebaseConfig.projectId}.cloudfunctions.net/${name}`;
+}
+
+async function createUdsParticipants() {
+  const textarea = document.getElementById('uds-create-emails');
+  const button = document.getElementById('uds-create-btn');
+  const hint = document.getElementById('uds-create-hint');
+  const raw = textarea?.value || '';
+  const emails = Array.from(new Set(
+    raw
+      .split(/[\n,]+/)
+      .map((value) => value.trim().toLowerCase())
+      .filter(Boolean)
+  ));
+
+  if (!emails.length) {
+    showToast('Enter at least one email address', '⚠️');
+    return;
+  }
+
+  const invalid = emails.filter((email) => !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email));
+  if (invalid.length) {
+    showToast(`Invalid email: ${invalid[0]}`, '⚠️', 3400);
+    return;
+  }
+
+  if (button) button.disabled = true;
+  if (hint) hint.textContent = 'Creating Firebase users and UDS participant records…';
+
+  try {
+    const currentUser = auth.currentUser;
+    if (!currentUser) {
+      throw new Error('You must be signed in as a researcher to enroll participants.');
+    }
+
+    const token = await currentUser.getIdToken();
+    const functionUrl = getFunctionUrl('enrollUdsParticipants');
+    const response = await fetch(functionUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify({emails}),
+    });
+
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok || payload.status !== 'ok') {
+      throw new Error(payload.message || 'Participant enrollment failed.');
+    }
+
+    const created = Array.isArray(payload.created) ? payload.created : [];
+    const skipped = Array.isArray(payload.skipped) ? payload.skipped : [];
+
+    if (!created.length) {
+      showToast(skipped.length ? 'Those UDS participants already exist or conflict with an existing Throne ID' : 'No participants created', 'ℹ️');
+      if (hint) hint.textContent = skipped.length
+        ? skipped.map((entry) => `${entry.email}: ${entry.reason}`).slice(0, 2).join(' | ')
+        : 'No participants were created.';
+      return;
+    }
+
+    addCreatedUdsParticipants(created);
+    if (textarea) textarea.value = '';
+    showToast(`Created ${created.length} UDS participant${created.length === 1 ? '' : 's'}`, '✅');
+    if (hint) hint.textContent = skipped.length
+      ? `Created ${created.length}. Skipped ${skipped.length} participant${skipped.length === 1 ? '' : 's'} with existing enrollment or conflicting Throne IDs.`
+      : 'Firebase users and UDS participant records were created successfully.';
+    switchStudy('uds');
+    showPage('overview');
+    renderUdsDashboard();
+    buildAlerts();
+  } catch (error) {
+    console.error('Failed to create UDS participants:', error);
+    const message = error?.message || 'Participant creation failed.';
+    showToast('Failed to create UDS participants', '⚠️', 3600);
+    if (hint) {
+      hint.textContent = message.includes('Failed to fetch')
+        ? `Browser could not reach ${getFunctionUrl('enrollUdsParticipants')}. If this function is not deployed yet, deploy functions or set localStorage.streamsyncFunctionsBaseUrl to your emulator base URL.`
+        : message;
+    }
+  } finally {
+    if (button) button.disabled = false;
+  }
 }
 
 // ── enrolledUserDocs ──────────────────────────────────────────────────────────
@@ -1802,23 +2190,42 @@ async function enrolledUserDocs() {
     ]);
 
     const patientRegistryByUid = {};
+    const patientRegistryByEmail = {};
     (patientSnap?.docs || []).forEach((doc) => {
       const data = doc.data() || {};
       if (typeof data.userId === 'string' && data.userId) {
         patientRegistryByUid[data.userId] = { ...data, patientDocId: doc.id };
       }
+      const email = String(data.email || '').trim().toLowerCase();
+      if (email) {
+        patientRegistryByEmail[email] = { ...data, patientDocId: doc.id };
+      }
     });
     window._patientRegistryByUid = patientRegistryByUid;
+    window._patientRegistryByEmail = patientRegistryByEmail;
 
     const results = [];
     userSnap.forEach(doc => {
       const data = doc.data() || {};
-      const registry = patientRegistryByUid[doc.id] || {};
+      const email = String(data.email || '').trim().toLowerCase();
+      const registry = patientRegistryByUid[doc.id] || patientRegistryByEmail[email] || {};
       const merged = { ...data, ...registry };
       const name = merged.name || merged.displayName || merged.Name || merged.email || null;
       dbg(`Found user: ${doc.id.slice(0,8)} → ${name}`);
       results.push({ uid: doc.id, name, extra: merged });
     });
+
+    (patientSnap?.docs || []).forEach((doc) => {
+      const data = doc.data() || {};
+      const linkedUid = typeof data.userId === 'string' ? data.userId : null;
+      const email = String(data.email || '').trim().toLowerCase();
+      if (linkedUid && results.some((entry) => entry.uid === linkedUid)) return;
+      if (!linkedUid && email && results.some((entry) => String(entry.extra?.email || '').trim().toLowerCase() === email)) return;
+      const name = data.name || data.displayName || data.email || `Pending ${doc.id.slice(0, 6)}`;
+      dbg(`Found registry-only participant: ${doc.id.slice(0,8)} → ${name}`);
+      results.push({ uid: linkedUid, name, extra: { ...data, patientDocId: doc.id } });
+    });
+
     dbg(`Total enrolled users to render: ${results.length}`);
     return results;
   } catch(e) {
@@ -1901,6 +2308,11 @@ async function init() {
         age: extra.age || null,
         phoneNumber: extra.phoneNumber || null,
         email: extra.email || null,
+        enrolledAt: extra.enrolledAt || extra.createdAt || null,
+        createdAt: extra.createdAt || null,
+        studyKey: inferStudyKey(extra),
+        studyId: extra.studyId || null,
+        pendingInvite: !uid,
         mrn: extra.mrn ? `MRN ${extra.mrn}` : null,
         surg: extra.surgery || extra.procedure || 'BPH Surgery',
         surg_cls: 'badge-blue',
@@ -1919,21 +2331,23 @@ async function init() {
       SHORT_KEY_TO_SUFFIX[shortKey] = suffix;
       window._userIdByShortKey[shortKey] = uid;
       window._sessionsByShortKey[shortKey] = [];
-      PATIENT_USER_IDS[shortKey] = uid;
+      if (uid) PATIENT_USER_IDS[shortKey] = uid;
       patientList.push({ shortKey, name, initials, suffix, uid });
     });
+    allParticipants = patientList.slice();
 
     if (patientList.length > 0 && !currentPatientKey) {
-      currentPatientKey = patientList[0].shortKey;
+      currentPatientKey = (patientList.find(({ shortKey }) => patientMatchesStudy(patients[shortKey], 'bladder') && patients[shortKey]._uid) || patientList[0]).shortKey;
     }
 
     // ── 4. Render cards ───────────────────────────────────────────────────
-    renderPatientCards(patientList);
+    renderPatientCards(patientList.filter(({ shortKey }) => patientMatchesStudy(patients[shortKey], 'bladder')));
 
 
     // ── 5. Load surgery dates ──────────────────────────────────────────────
     dbg(`Step 5: loading surgery dates for ${patientList.length} patient(s)`);
     await Promise.allSettled(patientList.map(async ({ shortKey, uid, suffix }) => {
+      if (!uid) return;
       try {
         const snap = await db.collection('users').doc(uid)
           .collection('surgery_date').doc('current').get();
@@ -1968,6 +2382,7 @@ async function init() {
     // ── 6. Load sessions (single where clause — no composite index needed) ─
     dbg(`Step 6: loading throne_sessions for ${patientList.length} patient(s)`);
     await Promise.allSettled(patientList.map(async ({ shortKey, uid }) => {
+      if (!uid) return;
       try {
         const snap = await db.collection('users').doc(uid)
           .collection('throne_sessions')
@@ -1985,13 +2400,17 @@ async function init() {
 
     // ── 7. Load explicit sync state from hk_sync and throne_sync ───────────
     await Promise.allSettled(patientList.map(async ({ shortKey, uid }) => {
+      if (!uid) return;
       window._throneSyncByShortKey[shortKey] = await fetchThroneSyncState(uid);
       window._hkSyncByShortKey[shortKey] = await fetchHKSyncSummary(uid);
     }));
 
     // ── 8. Update cards with Throne data ──────────────────────────────────
     let totalSessions = 0, syncIssues = 0;
-    for (const shortKey of Object.keys(SHORT_KEY_TO_SUFFIX)) {
+    const bladderShortKeys = patientList
+      .map(({ shortKey }) => shortKey)
+      .filter((shortKey) => patientMatchesStudy(patients[shortKey], 'bladder'));
+    for (const shortKey of bladderShortKeys) {
       const sessions = window._sessionsByShortKey[shortKey] || [];
       const uid = window._userIdByShortKey[shortKey];
       const count = await updatePatientCard(shortKey, sessions, uid);
@@ -2011,15 +2430,11 @@ async function init() {
     const s0 = document.getElementById('stat-total');
     const s1 = document.getElementById('stat-sync');
     const s2 = document.getElementById('stat-compliance');
-    const s3 = document.getElementById('cstat-sessions');
-    const s4 = document.getElementById('cstat-size');
-    if (s0) s0.textContent = patientList.length;
+    if (s0) s0.textContent = bladderShortKeys.length;
     if (s1) { s1.textContent = syncIssues; s1.style.color = syncIssues > 0 ? 'var(--amber)' : 'var(--green)'; }
     if (s2) s2.textContent = `${totalSessions} sessions`;
-    if (s3) s3.textContent = totalSessions;
-    if (s4) s4.textContent = patientList.length;
     const allPill = document.querySelector('#fpill-all .fpill-count');
-    if (allPill) allPill.textContent = patientList.length;
+    if (allPill) allPill.textContent = bladderShortKeys.length;
 
     // ── Update filter pill counts dynamically ────────────────────────────
     (function updatePillCounts() {
@@ -2047,10 +2462,12 @@ async function init() {
       if (fpillOverdue) fpillOverdue.style.display = overdueCount > 0 ? '' : 'none';
     })();
 
-    const totalSessionsCount = Object.values(window._sessionsByShortKey).reduce((s,arr)=>s+arr.length,0);
-    setFbStatus('connected', `Live · ${patientList.length} patients · ${totalSessionsCount} sessions`);
+    const totalSessionsCount = bladderShortKeys.reduce((sum, key) => sum + (window._sessionsByShortKey[key]?.length || 0), 0);
+    setFbStatus('connected', `Live · ${bladderShortKeys.length} bladder participants · ${totalSessionsCount} sessions`);
 
     // ── 10. Alerts + HealthKit ────────────────────────────────────────────
+    renderUdsDashboard();
+    updateStudyChrome();
     buildAlerts();
     dbg(`Step 9: launching HealthKit load for ${Object.keys(PATIENT_USER_IDS).length} patient(s)`);
     loadAllHealthKit().catch(e => { console.warn('HealthKit load error:', e); dbg(`HealthKit load fatal: ${e.message}`, true); });

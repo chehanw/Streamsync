@@ -43,6 +43,23 @@ interface SyncedClinicalNote {
   category: string;
   contentType: string | null;
   rawText: string | null;
+  rawDocument: string | null;
+  parsedDocType: string;
+  parsedText: string | null;
+  parsedSections: Array<{title: string; text: string}> | null;
+  attachmentEntries: Array<{
+    contentType: string | null;
+    title: string | null;
+    url: string | null;
+    size: number | null;
+    language: string | null;
+    hash: string | null;
+  }>;
+  selectedAttachment: {
+    contentType: string | null;
+    title: string | null;
+    url: string | null;
+  } | null;
   fhirResource: Record<string, any>;
   providerId: string;
   syncedAt: string;
@@ -52,6 +69,24 @@ interface SmartSyncIssue {
   resourceType: string;
   error: string;
   url: string;
+}
+
+interface ParsedNarrativeSection {
+  title: string;
+  text: string;
+}
+
+interface ParsedAttachmentContent {
+  rawDocument: string | null;
+  rawText: string | null;
+  parsedDocType: "cda" | "text" | "pdf" | "unknown";
+  parsedText: string | null;
+  parsedSections: ParsedNarrativeSection[];
+}
+
+interface AttachmentFetchResult {
+  contentType: string | null;
+  text: string | null;
 }
 
 function getBearerToken(req: any): string | null {
@@ -313,7 +348,7 @@ async function fetchBinaryText(
   attachmentUrl: string,
   fhirBase: string,
   accessToken: string,
-): Promise<string | null> {
+): Promise<AttachmentFetchResult> {
   try {
     const url = attachmentUrl.startsWith("http") ?
       attachmentUrl :
@@ -325,22 +360,152 @@ async function fetchBinaryText(
         Accept: "application/fhir+json, application/json, text/plain, */*",
       },
     });
-    if (!response.ok) return null;
+    if (!response.ok) return {contentType: null, text: null};
 
     const contentType = response.headers.get("content-type") || "";
     if (contentType.includes("json")) {
       // FHIR Binary resource — base64-encoded data field
       const json = await response.json() as Record<string, any>;
+      const binaryType = typeof json.contentType === "string" ? json.contentType : contentType;
       if (typeof json.data === "string") {
-        return Buffer.from(json.data, "base64").toString("utf8");
+        if (binaryType.includes("pdf")) {
+          return {contentType: binaryType, text: null};
+        }
+        return {
+          contentType: binaryType,
+          text: Buffer.from(json.data, "base64").toString("utf8"),
+        };
       }
-      return null;
+      return {contentType: binaryType, text: null};
     }
-    // Plain text response
-    return await response.text();
+    if (contentType.includes("pdf")) {
+      return {contentType, text: null};
+    }
+    return {contentType, text: await response.text()};
   } catch {
-    return null;
+    return {contentType: null, text: null};
   }
+}
+
+function looksLikeCda(decoded: string): boolean {
+  const head = decoded.slice(0, 2000);
+  return head.includes("ClinicalDocument") ||
+    head.includes("urn:hl7-org:v3") ||
+    (head.trimStart().startsWith("<?xml") && head.includes("<section"));
+}
+
+function stripMarkup(markup: string): string {
+  return markup
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/<\/(?:p|preamble|paragraph|item|tr|th|td|li|div|h[1-6])>/gi, "\n")
+    .replace(/<li(?:\s[^>]*)?>/gi, "- ")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&nbsp;/g, " ")
+    .replace(/&apos;/g, "'")
+    .replace(/&quot;/g, "\"")
+    .replace(/[ \t]+/g, " ")
+    .replace(/\n[ \t]+/g, "\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
+
+function parseCdaSections(xml: string): ParsedNarrativeSection[] {
+  const sections: ParsedNarrativeSection[] = [];
+  const sectionPattern = /<section(?:\s[^>]*)?>[\s\S]*?<\/section>/gi;
+  const sectionMatches = xml.match(sectionPattern) ?? [];
+
+  for (const block of sectionMatches) {
+    const titleMatch = /<title(?:\s[^>]*)?>([^<]*)<\/title>/i.exec(block);
+    const title = titleMatch ? stripMarkup(titleMatch[1]).trim() : "";
+    const textMatch = /<text(?:\s[^>]*)?>([\s\S]*?)<\/text>/i.exec(block);
+    const text = stripMarkup(textMatch ? textMatch[1] : "");
+    if (!text || text.length < 3) continue;
+    sections.push({
+      title: title || "Clinical Note",
+      text,
+    });
+  }
+
+  return sections;
+}
+
+function parseAttachmentContent(
+  rawDocument: string | null,
+  contentType: string | null,
+): ParsedAttachmentContent {
+  if (!rawDocument) {
+    return {
+      rawDocument: null,
+      rawText: null,
+      parsedDocType: contentType?.includes("pdf") ? "pdf" : "unknown",
+      parsedText: null,
+      parsedSections: [],
+    };
+  }
+
+  const normalizedType = (contentType || "").toLowerCase();
+  if (normalizedType.includes("text/plain")) {
+    const plainText = rawDocument.trim();
+    return {
+      rawDocument,
+      rawText: plainText || null,
+      parsedDocType: "text",
+      parsedText: plainText || null,
+      parsedSections: plainText ? [{title: "Clinical Note", text: plainText}] : [],
+    };
+  }
+
+  if (looksLikeCda(rawDocument)) {
+    const sections = parseCdaSections(rawDocument);
+    const plainText = sections
+      .map((section) => section.title ? `${section.title}\n${section.text}` : section.text)
+      .join("\n\n")
+      .trim();
+    return {
+      rawDocument,
+      rawText: plainText || null,
+      parsedDocType: "cda",
+      parsedText: plainText || null,
+      parsedSections: sections,
+    };
+  }
+
+  if (
+    normalizedType.includes("text/html") ||
+    normalizedType.includes("application/xhtml+xml") ||
+    normalizedType.includes("application/xml") ||
+    normalizedType.includes("text/xml")
+  ) {
+    const plainText = stripMarkup(rawDocument);
+    return {
+      rawDocument,
+      rawText: plainText || null,
+      parsedDocType: normalizedType.includes("html") ? "text" : "unknown",
+      parsedText: plainText || null,
+      parsedSections: plainText ? [{title: "Clinical Note", text: plainText}] : [],
+    };
+  }
+
+  const fallbackText = rawDocument.trim().slice(0, 50_000);
+  return {
+    rawDocument,
+    rawText: fallbackText || null,
+    parsedDocType: "unknown",
+    parsedText: fallbackText || null,
+    parsedSections: fallbackText ? [{title: "Clinical Note", text: fallbackText}] : [],
+  };
+}
+
+function attachmentPreferenceScore(contentType: string | null | undefined): number {
+  const normalized = (contentType || "").toLowerCase();
+  if (normalized.includes("text/plain")) return 0;
+  if (normalized.includes("text/html") || normalized.includes("application/xhtml+xml")) return 1;
+  if (normalized.includes("application/xml") || normalized.includes("text/xml")) return 2;
+  if (normalized.includes("pdf")) return 3;
+  return 10;
 }
 
 function displayNameFromResource(resource: Record<string, any>, fallback: string): string {
@@ -453,10 +618,6 @@ export const syncSmartClinicalData = onRequest(async (req, res) => {
     await saveConnection(uid, connection);
     const syncIssues: SmartSyncIssue[] = [];
 
-    if (!connection.patient) {
-      throw new Error("SMART token response did not include patient context.");
-    }
-
     // Log the granted scope from the token response
     logger.info("SMART connection scope granted", {
       uid,
@@ -465,55 +626,94 @@ export const syncSmartClinicalData = onRequest(async (req, res) => {
     });
 
     const base = system.fhirBaseUrl.replace(/\/$/, "");
-    const patientId = connection.patient;
     const accessToken = connection.accessToken;
-    const [
-      patient,
-      medicationRequests,
-      observations,
-      allergies,
-      conditions,
-      procedures,
-      documentReferences,
-    ] = await Promise.all([
-      fetchJson<Record<string, any>>(`${base}/Patient/${encodeURIComponent(patientId)}`, accessToken),
-      fetchBundlePagesSafe<Record<string, any>>(
-        `${base}/MedicationRequest?patient=${encodeURIComponent(patientId)}&_count=100`,
-        accessToken,
-        "MedicationRequest",
-        syncIssues,
-      ),
-      fetchBundlePagesSafe<Record<string, any>>(
-        `${base}/Observation?patient=${encodeURIComponent(patientId)}&category=laboratory&_count=100`,
-        accessToken,
-        "Observation",
-        syncIssues,
-      ),
-      fetchBundlePagesSafe<Record<string, any>>(
-        `${base}/AllergyIntolerance?patient=${encodeURIComponent(patientId)}&_count=100`,
-        accessToken,
-        "AllergyIntolerance",
-        syncIssues,
-      ),
-      fetchBundlePagesSafe<Record<string, any>>(
-        `${base}/Condition?patient=${encodeURIComponent(patientId)}&_count=100`,
-        accessToken,
-        "Condition",
-        syncIssues,
-      ),
-      fetchBundlePagesSafe<Record<string, any>>(
-        `${base}/Procedure?patient=${encodeURIComponent(patientId)}&_count=100`,
-        accessToken,
-        "Procedure",
-        syncIssues,
-      ),
-      fetchBundlePagesSafe<Record<string, any>>(
-        `${base}/DocumentReference?patient=${encodeURIComponent(patientId)}&_count=100`,
-        accessToken,
-        "DocumentReference",
-        syncIssues,
-      ),
-    ]);
+    const patientId = connection.patient;
+    let patient: Record<string, any> | null = null;
+    let medicationRequests: Record<string, any>[] = [];
+    let observations: Record<string, any>[] = [];
+    let allergies: Record<string, any>[] = [];
+    let conditions: Record<string, any>[] = [];
+    let procedures: Record<string, any>[] = [];
+    let documentReferences: Record<string, any>[] = [];
+
+    if (!patientId) {
+      syncIssues.push({
+        resourceType: "Patient",
+        error: "SMART token response did not include patient context.",
+        url: `${base}/Patient`,
+      });
+      logger.warn("SMART sync missing patient context", {
+        uid,
+        providerId,
+        grantedScope: connection.scope,
+      });
+    } else {
+      try {
+        patient = await fetchJson<Record<string, any>>(
+          `${base}/Patient/${encodeURIComponent(patientId)}`,
+          accessToken,
+        );
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        syncIssues.push({
+          resourceType: "Patient",
+          error: message,
+          url: `${base}/Patient/${encodeURIComponent(patientId)}`,
+        });
+        logger.warn("SMART Patient fetch failed", {
+          uid,
+          providerId,
+          patientId,
+          error: message,
+        });
+      }
+
+      [
+        medicationRequests,
+        observations,
+        allergies,
+        conditions,
+        procedures,
+        documentReferences,
+      ] = await Promise.all([
+        fetchBundlePagesSafe<Record<string, any>>(
+          `${base}/MedicationRequest?patient=${encodeURIComponent(patientId)}&_count=100`,
+          accessToken,
+          "MedicationRequest",
+          syncIssues,
+        ),
+        fetchBundlePagesSafe<Record<string, any>>(
+          `${base}/Observation?patient=${encodeURIComponent(patientId)}&category=laboratory&_count=100`,
+          accessToken,
+          "Observation",
+          syncIssues,
+        ),
+        fetchBundlePagesSafe<Record<string, any>>(
+          `${base}/AllergyIntolerance?patient=${encodeURIComponent(patientId)}&_count=100`,
+          accessToken,
+          "AllergyIntolerance",
+          syncIssues,
+        ),
+        fetchBundlePagesSafe<Record<string, any>>(
+          `${base}/Condition?patient=${encodeURIComponent(patientId)}&_count=100`,
+          accessToken,
+          "Condition",
+          syncIssues,
+        ),
+        fetchBundlePagesSafe<Record<string, any>>(
+          `${base}/Procedure?patient=${encodeURIComponent(patientId)}&_count=100`,
+          accessToken,
+          "Procedure",
+          syncIssues,
+        ),
+        fetchBundlePagesSafe<Record<string, any>>(
+          `${base}/DocumentReference?patient=${encodeURIComponent(patientId)}&_count=100`,
+          accessToken,
+          "DocumentReference",
+          syncIssues,
+        ),
+      ]);
+    }
 
     const medications = medicationRequests.map((resource) => ({
       displayName: displayNameFromResource(resource, "Medication"),
@@ -566,18 +766,67 @@ export const syncSmartClinicalData = onRequest(async (req, res) => {
           "Clinical Note";
 
         let rawText: string | null = null;
+        let rawDocument: string | null = null;
         let contentType: string | null = null;
+        let parsedDocType = "unknown";
+        let parsedText: string | null = null;
+        let parsedSections: ParsedNarrativeSection[] = [];
+        let selectedAttachment: SyncedClinicalNote["selectedAttachment"] = null;
 
-        const attachments = (resource.content ?? []) as Array<Record<string, any>>;
-        for (const item of attachments) {
-          const attachment = item.attachment as Record<string, any> | undefined;
-          if (!attachment) continue;
-          contentType = (attachment.contentType as string | undefined) ?? null;
+        const attachments = ((resource.content ?? []) as Array<Record<string, any>>)
+          .map((item) => item.attachment as Record<string, any> | undefined)
+          .filter((attachment): attachment is Record<string, any> => Boolean(attachment));
+        const attachmentEntries = attachments.map((attachment) => ({
+          contentType: (attachment.contentType as string | undefined) ?? null,
+          title: (attachment.title as string | undefined) ?? null,
+          url: (attachment.url as string | undefined) ?? null,
+          size: typeof attachment.size === "number" ? attachment.size : null,
+          language: (attachment.language as string | undefined) ?? null,
+          hash: (attachment.hash as string | undefined) ?? null,
+        }));
+
+        const sortedAttachments = [...attachments].sort((left, right) =>
+          attachmentPreferenceScore(left.contentType as string | undefined) -
+          attachmentPreferenceScore(right.contentType as string | undefined)
+        );
+
+        for (const attachment of sortedAttachments) {
           const url = attachment.url as string | undefined;
-          if (url) {
-            rawText = await fetchBinaryText(url, base, accessToken);
+          const declaredContentType = (attachment.contentType as string | undefined) ?? null;
+          if (!url) continue;
+
+          const fetched = await fetchBinaryText(url, base, accessToken);
+          const effectiveContentType = fetched.contentType || declaredContentType;
+          const parsed = parseAttachmentContent(fetched.text, effectiveContentType);
+
+          if (!parsed.rawDocument && !parsed.rawText && effectiveContentType?.includes("pdf")) {
+            contentType = effectiveContentType;
+            parsedDocType = "pdf";
+            selectedAttachment = {
+              contentType: effectiveContentType,
+              title: (attachment.title as string | undefined) ?? null,
+              url,
+            };
+            break;
           }
-          if (rawText) break;
+
+          if (parsed.rawText || parsed.rawDocument) {
+            contentType = effectiveContentType;
+            rawText = parsed.rawText ? parsed.rawText.slice(0, 50_000) : null;
+            rawDocument = parsed.rawDocument ? parsed.rawDocument.slice(0, 50_000) : null;
+            parsedDocType = parsed.parsedDocType;
+            parsedText = parsed.parsedText ? parsed.parsedText.slice(0, 50_000) : null;
+            parsedSections = parsed.parsedSections.map((section) => ({
+              title: section.title,
+              text: section.text.slice(0, 10_000),
+            }));
+            selectedAttachment = {
+              contentType: effectiveContentType,
+              title: (attachment.title as string | undefined) ?? null,
+              url,
+            };
+            break;
+          }
         }
 
         return {
@@ -586,7 +835,13 @@ export const syncSmartClinicalData = onRequest(async (req, res) => {
           date,
           category,
           contentType,
-          rawText: rawText ? rawText.slice(0, 50_000) : null,
+          rawText,
+          rawDocument,
+          parsedDocType,
+          parsedText,
+          parsedSections: parsedSections.length > 0 ? parsedSections : null,
+          attachmentEntries,
+          selectedAttachment,
           fhirResource: resource,
           providerId,
           syncedAt,
@@ -669,9 +924,9 @@ export const syncSmartClinicalData = onRequest(async (req, res) => {
         lastSyncedAt: syncedAt,
       },
       demographics: {
-        age: calculateAge(patient.birthDate),
-        dateOfBirth: patient.birthDate ?? null,
-        biologicalSex: patient.gender ? String(patient.gender) : null,
+        age: calculateAge(patient?.birthDate),
+        dateOfBirth: patient?.birthDate ?? null,
+        biologicalSex: patient?.gender ? String(patient.gender) : null,
       },
       clinicalRecords: {
         medications,

@@ -38,6 +38,33 @@ export default function SmartConnectModal() {
   const [loading, setLoading] = useState(false);
   const [loadingId, setLoadingId] = useState<string | null>(null);
   const [launchingAuth, setLaunchingAuth] = useState(false);
+  const [inlineError, setInlineError] = useState<string | null>(null);
+  const [inlineNotice, setInlineNotice] = useState<string | null>(null);
+  const [overlayTitle, setOverlayTitle] = useState('Opening provider sign-in');
+  const [overlayBody, setOverlayBody] = useState(
+    'The secure patient portal may slide in next. Please wait while StreamSync opens it.',
+  );
+
+  async function persistProviderConnection(
+    connection: Awaited<ReturnType<typeof connectSmartHealthSystem>>,
+  ) {
+    const onboardingData = await OnboardingService.getData();
+    await OnboardingService.updateData({
+      permissions: {
+        healthKit: onboardingData.permissions?.healthKit ?? 'not_determined',
+        clinicalRecords: onboardingData.permissions?.clinicalRecords ?? 'not_determined',
+        throne: onboardingData.permissions?.throne ?? 'not_determined',
+        smartProvider: 'granted',
+      },
+      providerConnection: {
+        providerId: connection.providerId,
+        providerName: connection.providerName,
+        issuer: connection.issuer,
+        fhirBaseUrl: connection.fhirBaseUrl,
+        connectedAt: connection.connectedAt ?? new Date().toISOString(),
+      },
+    });
+  }
 
   function buildImportSummary(syncResult: Awaited<ReturnType<typeof syncSmartClinicalData>>): string {
     if (syncResult.syncWarning) {
@@ -69,6 +96,10 @@ export default function SmartConnectModal() {
     setLoading(true);
     setLoadingId(system.id);
     setLaunchingAuth(true);
+    setInlineError(null);
+    setInlineNotice(null);
+    setOverlayTitle('Opening provider sign-in');
+    setOverlayBody('The secure patient portal may slide in next. Please wait while StreamSync opens it.');
     try {
       // Wait for Firebase Auth to finish restoring its persisted session before
       // checking currentUser.  Without this, currentUser can still be null on
@@ -88,46 +119,30 @@ export default function SmartConnectModal() {
 
       await new Promise((resolve) => setTimeout(resolve, 150));
       const connection = await connectSmartHealthSystem(system);
-      let syncResult: Awaited<ReturnType<typeof syncSmartClinicalData>> | null = null;
-
-      try {
-        syncResult = await syncSmartClinicalData(connection.providerId);
-      } catch (error) {
-        console.warn('[SMART] Initial clinical sync failed after connection:', error);
-      }
-
-      const onboardingData = await OnboardingService.getData();
-      await OnboardingService.updateData({
-        permissions: {
-          healthKit: onboardingData.permissions?.healthKit ?? 'not_determined',
-          clinicalRecords: onboardingData.permissions?.clinicalRecords ?? 'not_determined',
-          throne: onboardingData.permissions?.throne ?? 'not_determined',
-          smartProvider: 'granted',
-        },
-        providerConnection: {
-          providerId: syncResult?.connection.providerId ?? connection.providerId,
-          providerName: syncResult?.connection.providerName ?? connection.providerName,
-          issuer: syncResult?.connection.issuer ?? connection.issuer,
-          fhirBaseUrl: syncResult?.connection.fhirBaseUrl ?? connection.fhirBaseUrl,
-          connectedAt: syncResult?.connection.connectedAt ?? connection.connectedAt ?? new Date().toISOString(),
-        },
-      });
-
-      if (syncResult) {
-        Alert.alert(
-          'Health System Connected',
-          buildImportSummary(syncResult),
-        );
-      } else {
-        Alert.alert(
-          'Health System Connected',
-          'Connected successfully. Initial record sync did not complete, but you can try again from Profile.',
+      await persistProviderConnection(connection);
+      setInlineNotice(`${connection.providerName} connected successfully. Syncing records now…`);
+      setOverlayTitle('Epic connected');
+      setOverlayBody('StreamSync is now syncing your records automatically. This can take a moment.');
+      const syncResult = await syncSmartClinicalData(connection.providerId);
+      if (syncResult.syncIssues?.length) {
+        const issueSummary = syncResult.syncIssues
+          .map((issue) => `${issue.resourceType}: ${issue.error}`)
+          .join('\n');
+        throw new Error(
+          `${connection.providerName} connected successfully, but the clinical sync did not complete.\n${issueSummary}`,
         );
       }
+
+      await persistProviderConnection(syncResult.connection);
+      setInlineError(null);
+      setInlineNotice(null);
+      Alert.alert(
+        'Health System Connected',
+        buildImportSummary(syncResult),
+      );
       router.back();
     } catch (error) {
-      Alert.alert(
-        'Connection Failed',
+      setInlineError(
         error instanceof Error ? error.message : 'Please try again.',
       );
     } finally {
@@ -152,6 +167,20 @@ export default function SmartConnectModal() {
         <Text style={styles.subtitle}>
           Select your health provider to import clinical records.
         </Text>
+
+        {inlineNotice ? (
+          <View style={styles.noticeBanner}>
+            <Text style={styles.noticeBannerTitle}>Connection successful</Text>
+            <Text style={styles.noticeBannerText}>{inlineNotice}</Text>
+          </View>
+        ) : null}
+
+        {inlineError ? (
+          <View style={styles.errorBanner}>
+            <Text style={styles.errorBannerTitle}>Clinical sync failed</Text>
+            <Text style={styles.errorBannerText}>{inlineError}</Text>
+          </View>
+        ) : null}
 
         {healthSystems.length === 0 ? (
           <View style={styles.emptyState}>
@@ -190,10 +219,8 @@ export default function SmartConnectModal() {
         {launchingAuth ? (
           <View style={styles.launchOverlay}>
             <ActivityIndicator size="large" color="#007AFF" />
-            <Text style={styles.launchTitle}>Opening provider sign-in</Text>
-            <Text style={styles.launchBody}>
-              The secure patient portal may slide in next. Please wait while StreamSync opens it.
-            </Text>
+            <Text style={styles.launchTitle}>{overlayTitle}</Text>
+            <Text style={styles.launchBody}>{overlayBody}</Text>
           </View>
         ) : null}
       </SafeAreaView>
@@ -218,6 +245,44 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
+  },
+  errorBanner: {
+    backgroundColor: '#FEF2F2',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#FECACA',
+    padding: 16,
+    marginBottom: 12,
+  },
+  noticeBanner: {
+    backgroundColor: '#ECFDF3',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#A7F3D0',
+    padding: 16,
+    marginBottom: 12,
+  },
+  noticeBannerTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#065F46',
+    marginBottom: 6,
+  },
+  noticeBannerText: {
+    fontSize: 14,
+    lineHeight: 20,
+    color: '#047857',
+  },
+  errorBannerTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#991B1B',
+    marginBottom: 6,
+  },
+  errorBannerText: {
+    fontSize: 14,
+    lineHeight: 20,
+    color: '#7F1D1D',
   },
   emptyStateTitle: {
     fontSize: 16,

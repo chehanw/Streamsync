@@ -139,6 +139,7 @@ export function buildMedicalHistoryPrefill(
       anticholinergics: buildMedicationEntry(medGroups.anticholinergics),
       beta3Agonists: buildMedicationEntry(medGroups.beta3Agonists),
       otherBPH: buildMedicationEntry(medGroups.otherBPH),
+      otherMedications: buildMedicationEntry(medGroups.unrelated),
     },
 
     surgicalHistory: {
@@ -197,6 +198,7 @@ export function isFullyPrefilled(prefill: MedicalHistoryPrefill): boolean {
     prefill.medications.anticholinergics,
     prefill.medications.beta3Agonists,
     prefill.medications.otherBPH,
+    prefill.medications.otherMedications,
   ].some((entry) => entry.confidence !== 'none');
 
   // Conditions must have been checked
@@ -230,6 +232,7 @@ export function getMissingFields(prefill: MedicalHistoryPrefill): string[] {
     prefill.medications.anticholinergics,
     prefill.medications.beta3Agonists,
     prefill.medications.otherBPH,
+    prefill.medications.otherMedications,
   ].every((entry) => entry.confidence === 'none');
   if (noMedData) missing.push('medications');
 
@@ -282,6 +285,7 @@ export function getKnownFieldsSummary(prefill: MedicalHistoryPrefill): string[] 
     { label: 'Anticholinergics', entry: prefill.medications.anticholinergics },
     { label: 'Beta-3 agonists', entry: prefill.medications.beta3Agonists },
     { label: 'Other BPH meds', entry: prefill.medications.otherBPH },
+    { label: 'Other medications', entry: prefill.medications.otherMedications },
   ];
   for (const { label, entry } of medCategories) {
     if (entry.value && entry.value.length > 0) {

@@ -205,7 +205,7 @@ export async function saveSurgeryDate(uid: string, dateStr: string): Promise<voi
 export interface MedHistoryMedication {
   name: string;
   brandName?: string;
-  groupKey: string;          // alphaBlockers | fiveARIs | anticholinergics | beta3Agonists | otherBPH
+  groupKey: string;          // alphaBlockers | fiveARIs | anticholinergics | beta3Agonists | otherBPH | otherMedications
 }
 
 export interface MedHistoryProcedure {
